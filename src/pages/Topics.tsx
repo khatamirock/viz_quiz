@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useData } from '../lib/hooks';
-import { Topic } from '../types';
-import { Folder, Plus, ChevronRight, Hash } from 'lucide-react';
+import { Topic, Quiz } from '../types';
+import { Folder, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 
 export default function Topics() {
   const [topics, setTopics] = useData<Topic[]>('/api/topics', []);
+  const [quizzes] = useData<Quiz[]>('/api/quizzes', []); // To check if topic has quizzes
   const [newTopicName, setNewTopicName] = useState('');
   const [selectedParentId, setSelectedParentId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -38,15 +39,43 @@ export default function Topics() {
     }
   };
 
+  const handleUpdate = async (id: string, newName: string) => {
+    try {
+      const res = await fetch(`/api/topics/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName })
+      });
+      if (res.ok) {
+        setTopics(topics.map(t => t.id === id ? { ...t, name: newName } : t));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this topic? It might break quizzes inside it.')) return;
+    try {
+      const res = await fetch(`/api/topics/${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setTopics(topics.filter(t => t.id !== id));
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const topLevel = topics.filter(t => !t.parentId);
-  
   const getChildren = (parentId: string) => topics.filter(t => t.parentId === parentId);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight mb-2">Topics structure</h1>
-        <p className="text-neutral-500">Organize your quizzes logically by creating nested topic categories.</p>
+        <p className="text-neutral-500">Organize your quizzes logically by creating nested topic categories. You can also rename or delete them.</p>
       </div>
 
       <div className="bg-white p-6 rounded-2xl border border-neutral-200">
@@ -90,7 +119,14 @@ export default function Topics() {
           {topLevel.length === 0 && <p className="text-sm text-neutral-500">No topics created yet.</p>}
           <div className="space-y-2">
             {topLevel.map(topic => (
-              <TopicItem key={topic.id} topic={topic} getChildren={getChildren} depth={0} />
+              <TopicItem 
+                key={topic.id} 
+                topic={topic} 
+                getChildren={getChildren} 
+                depth={0} 
+                onDelete={handleDelete}
+                onUpdate={handleUpdate}
+              />
             ))}
           </div>
         </div>
@@ -99,20 +135,90 @@ export default function Topics() {
   );
 }
 
-function TopicItem({ topic, getChildren, depth }: { topic: Topic, getChildren: (id: string) => Topic[], depth: number }) {
+function TopicItem({ 
+  topic, 
+  getChildren, 
+  depth,
+  onDelete,
+  onUpdate
+}: { 
+  topic: Topic, 
+  getChildren: (id: string) => Topic[], 
+  depth: number,
+  onDelete: (id: string) => void,
+  onUpdate: (id: string, name: string) => void
+}) {
   const children = getChildren(topic.id);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(topic.name);
   
+  const handleSave = () => {
+    if (editName.trim() && editName !== topic.name) {
+      onUpdate(topic.id, editName.trim());
+    } else {
+      setEditName(topic.name);
+    }
+    setIsEditing(false);
+  };
+
   return (
     <div className="space-y-2">
       <div 
-        className="flex items-center space-x-3 p-3 bg-neutral-50 rounded-lg border border-neutral-100" 
+        className="flex items-center space-x-3 p-3 bg-neutral-50 rounded-lg border border-neutral-100 group" 
         style={{ marginLeft: `${depth * 24}px` }}
       >
-        <Folder size={18} className="text-neutral-400" />
-        <span className="font-medium">{topic.name}</span>
+        <Folder size={18} className="text-neutral-400 shrink-0" />
+        {isEditing ? (
+          <div className="flex items-center space-x-2 flex-1">
+            <input
+              type="text"
+              autoFocus
+              className="flex-1 px-2 py-1 text-sm border border-neutral-300 rounded focus:outline-none"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') handleSave();
+                if (e.key === 'Escape') {
+                  setEditName(topic.name);
+                  setIsEditing(false);
+                }
+              }}
+            />
+            <button onClick={handleSave} className="p-1 text-green-600 hover:bg-green-50 rounded"><Check size={16} /></button>
+            <button onClick={() => {
+              setEditName(topic.name);
+              setIsEditing(false);
+            }} className="p-1 text-red-600 hover:bg-red-50 rounded"><X size={16} /></button>
+          </div>
+        ) : (
+          <>
+            <span className="font-medium flex-1">{topic.name}</span>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="p-1.5 text-neutral-500 hover:text-black hover:bg-neutral-200 rounded-md"
+              >
+                <Edit2 size={14} />
+              </button>
+              <button 
+                onClick={() => onDelete(topic.id)}
+                className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
       {children.map(child => (
-        <TopicItem key={child.id} topic={child} getChildren={getChildren} depth={depth + 1} />
+        <TopicItem 
+          key={child.id} 
+          topic={child} 
+          getChildren={getChildren} 
+          depth={depth + 1} 
+          onDelete={onDelete}
+          onUpdate={onUpdate}
+        />
       ))}
     </div>
   );

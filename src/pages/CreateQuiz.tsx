@@ -6,9 +6,14 @@ import { useNavigate } from 'react-router-dom';
 
 export default function CreateQuiz() {
   const [topics] = useData<Topic[]>('/api/topics', []);
+  const [quizzes] = useData<Quiz[]>('/api/quizzes', []);
   const [file, setFile] = useState<File | null>(null);
+  
+  const [mode, setMode] = useState<'new' | 'append'>('new');
   const [topicId, setTopicId] = useState<string>('');
   const [title, setTitle] = useState('');
+  const [selectedQuizId, setSelectedQuizId] = useState<string>('');
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -17,8 +22,18 @@ export default function CreateQuiz() {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !topicId || !title) {
-       setError("Please fill all fields and select an image.");
+    if (!file) {
+       setError("Please select an image.");
+       return;
+    }
+    
+    if (mode === 'new' && (!topicId || !title)) {
+       setError("Please fill all fields.");
+       return;
+    }
+    
+    if (mode === 'append' && !selectedQuizId) {
+       setError("Please select a quiz to append to.");
        return;
     }
 
@@ -27,8 +42,12 @@ export default function CreateQuiz() {
 
     const formData = new FormData();
     formData.append('image', file);
-    formData.append('topicId', topicId);
-    formData.append('title', title);
+    if (mode === 'new') {
+      formData.append('topicId', topicId);
+      formData.append('title', title);
+    } else {
+      formData.append('quizId', selectedQuizId);
+    }
 
     try {
       const res = await fetch('/api/generate-quiz', {
@@ -53,7 +72,7 @@ export default function CreateQuiz() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
       <div>
-         <h1 className="text-3xl font-semibold tracking-tight mb-2">Create Quiz from Image</h1>
+         <h1 className="text-3xl font-semibold tracking-tight mb-2">Extract Questions</h1>
          <p className="text-neutral-500">Upload a picture of a textbook page. Our AI will automatically extract and format the questions into a quiz.</p>
       </div>
 
@@ -64,35 +83,76 @@ export default function CreateQuiz() {
             </div>
          )}
          
-         <div className="space-y-1">
-            <label className="block text-sm font-medium text-neutral-700">Quiz Title</label>
-            <input 
-              type="text" 
-              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
-              placeholder="e.g. History Chapter 4 Review"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
+         <div className="flex space-x-2 p-1 bg-neutral-100 rounded-lg">
+           <button
+             type="button"
+             onClick={() => setMode('new')}
+             className={`flex-1 py-2 text-sm font-medium rounded-md transition ${mode === 'new' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}
+           >
+             Create New Quiz
+           </button>
+           <button
+             type="button"
+             onClick={() => setMode('append')}
+             className={`flex-1 py-2 text-sm font-medium rounded-md transition ${mode === 'append' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}
+           >
+             Add to Existing Quiz
+           </button>
          </div>
 
-         <div className="space-y-1">
-            <label className="block text-sm font-medium text-neutral-700">Topic</label>
-            <select 
-              className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
-              value={topicId}
-              onChange={(e) => setTopicId(e.target.value)}
-              required
-            >
-              <option value="" disabled>Select a topic</option>
-              {topics.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-            {topics.length === 0 && (
-              <p className="text-xs text-neutral-500 mt-1">Make sure you create a topic first in the Topics tab.</p>
-            )}
-         </div>
+         {mode === 'new' ? (
+           <>
+             <div className="space-y-1">
+                <label className="block text-sm font-medium text-neutral-700">Quiz Title</label>
+                <input 
+                  type="text" 
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                  placeholder="e.g. History Chapter 4 Review"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required={mode === 'new'}
+                />
+             </div>
+
+             <div className="space-y-1">
+                <label className="block text-sm font-medium text-neutral-700">Topic</label>
+                <select 
+                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                  value={topicId}
+                  onChange={(e) => setTopicId(e.target.value)}
+                  required={mode === 'new'}
+                >
+                  <option value="" disabled>Select a topic</option>
+                  {topics.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                {topics.length === 0 && (
+                  <p className="text-xs text-neutral-500 mt-1">Make sure you create a topic first in the Topics tab.</p>
+                )}
+             </div>
+           </>
+         ) : (
+           <div className="space-y-1">
+              <label className="block text-sm font-medium text-neutral-700">Select Existing Quiz</label>
+              <select 
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                value={selectedQuizId}
+                onChange={(e) => setSelectedQuizId(e.target.value)}
+                required={mode === 'append'}
+              >
+                <option value="" disabled>Select a quiz to append to</option>
+                {quizzes.map(q => (
+                  <option key={q.id} value={q.id}>
+                    {q.title} ({topics.find(t => t.id === q.topicId)?.name || 'Unknown Topic'})
+                  </option>
+                ))}
+              </select>
+              {quizzes.length === 0 && (
+                <p className="text-xs text-neutral-500 mt-1">You don't have any quizzes yet to append to.</p>
+              )}
+           </div>
+         )}
 
          <div className="space-y-2">
             <label className="block text-sm font-medium text-neutral-700">Upload Image</label>
@@ -142,7 +202,7 @@ export default function CreateQuiz() {
                <span>Extracting Questions using AI...</span>
              </>
            ) : (
-             <span>Generate Quiz</span>
+             <span>{mode === 'new' ? 'Generate New Quiz' : 'Add Questions to Quiz'}</span>
            )}
          </button>
       </form>

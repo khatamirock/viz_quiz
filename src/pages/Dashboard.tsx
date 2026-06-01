@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useData } from '../lib/hooks';
 import { Topic, Quiz, QuizAttempt } from '../types';
 import { Link } from 'react-router-dom';
-import { Folder, Play, CheckCircle, BarChart2 } from 'lucide-react';
+import { Folder, Play, CheckCircle, BarChart2, Trash2 } from 'lucide-react';
 
 export default function Dashboard() {
-  const [quizzes] = useData<Quiz[]>('/api/quizzes', []);
+  const [quizzes, setQuizzes] = useData<Quiz[]>('/api/quizzes', []);
   const [attempts] = useData<QuizAttempt[]>('/api/progress', []);
   const [topics] = useData<Topic[]>('/api/topics', []);
 
@@ -13,6 +13,20 @@ export default function Dashboard() {
   const avgScore = attempts.length > 0 
     ? Math.round(attempts.reduce((acc, att) => acc + (att.score / att.totalQuestions), 0) / attempts.length * 100) 
     : 0;
+
+  const handleDeleteQuiz = async (quizId: string) => {
+    if (!window.confirm("Are you sure you want to delete this quiz?")) return;
+    try {
+      const res = await fetch(`/api/quizzes/${quizId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setQuizzes(quizzes.filter(q => q.id !== quizId));
+      }
+    } catch(err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -56,9 +70,18 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-             {quizzes.slice(-4).reverse().map(quiz => (
-               <div key={quiz.id} className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm flex flex-col">
-                 <h3 className="font-medium text-lg mb-1">{quiz.title}</h3>
+             {[...quizzes].reverse().map(quiz => (
+               <div key={quiz.id} className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm flex flex-col group">
+                 <div className="flex justify-between items-start mb-1">
+                   <h3 className="font-medium text-lg">{quiz.title}</h3>
+                   <button 
+                     onClick={() => handleDeleteQuiz(quiz.id)}
+                     className="text-neutral-400 hover:text-red-500 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                     title="Delete Quiz"
+                   >
+                     <Trash2 size={16} />
+                   </button>
+                 </div>
                  <p className="text-sm text-neutral-500 mb-4 flex-1">
                    {quiz.questions.length} questions â€¢ Topic: {topics.find(t => t.id === quiz.topicId)?.name || 'Unknown'}
                  </p>

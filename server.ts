@@ -113,6 +113,38 @@ async function insertData<T extends {id: string}>(collection: string, doc: T): P
   await setKV(store);
 }
 
+async function updateData<T extends {id: string}>(collection: string, id: string, update: Partial<T>): Promise<void> {
+  const isMongoConnected = await connectDB();
+  if (isMongoConnected) {
+    if (collection === 'topics') await TopicModel.findOneAndUpdate({ id }, update);
+    if (collection === 'quizzes') await QuizModel.findOneAndUpdate({ id }, update);
+    if (collection === 'attempts') await AttemptModel.findOneAndUpdate({ id }, update);
+    return;
+  }
+  const store = await getKV();
+  const arr = (store[collection] as T[]) || [];
+  const index = arr.findIndex(item => item.id === id);
+  if (index !== -1) {
+    arr[index] = { ...arr[index], ...update };
+    store[collection] = arr;
+    await setKV(store);
+  }
+}
+
+async function deleteData(collection: string, id: string): Promise<void> {
+  const isMongoConnected = await connectDB();
+  if (isMongoConnected) {
+    if (collection === 'topics') await TopicModel.findOneAndDelete({ id });
+    if (collection === 'quizzes') await QuizModel.findOneAndDelete({ id });
+    if (collection === 'attempts') await AttemptModel.findOneAndDelete({ id });
+    return;
+  }
+  const store = await getKV();
+  const arr = (store[collection] as {id: string}[]) || [];
+  store[collection] = arr.filter(item => item.id !== id);
+  await setKV(store);
+}
+
 // Data models interfaces
 export interface Topic {
   id: string;
@@ -181,6 +213,27 @@ function getGeminiClient(): GoogleGenAI {
     }
   });
 
+  app.put('/api/topics/:id', async (req, res) => {
+    try {
+      const { name } = req.body;
+      const { id } = req.params;
+      await updateData('topics', id, { name });
+      res.json({ id, name });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/topics/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      await deleteData('topics', id);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Quizzes
   app.get('/api/quizzes', async (req, res) => {
     try {
@@ -197,6 +250,16 @@ function getGeminiClient(): GoogleGenAI {
       const quizzes = await getData<Quiz>('quizzes');
       const filtered = quizzes.filter(q => q.topicId === topicId);
       res.json(filtered);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.delete('/api/quizzes/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      await deleteData('quizzes', id);
+      res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -224,15 +287,15 @@ function getGeminiClient(): GoogleGenAI {
   app.post('/api/generate-quiz', upload.single('image'), async (req, res) => {
     try {
       const file = req.file;
-      const { topicId, title } = req.body;
+      const { topicId, title, quizId } = req.body;
 
       if (!file) {
         res.status(400).json({ error: 'No image uploaded' });
         return;
       }
 
-      if (!topicId || !title) {
-        res.status(400).json({ error: 'Topic ID and Title are required' });
+      if (!quizId && (!topicId || !title)) {
+        res.status(400).json({ error: 'Quiz ID or Topic ID + Title are required' });
         return;
       }
 
@@ -277,9 +340,9 @@ No other text, markdown, or explanations outside the JSON array.`;
       const responseText = response.text || '[]';
       let extractedQuestions = [];
       try {
-        extractedQuestions = JSON.parse(responseText.trim().replace(/^\\s*\\x60\\x60\\x60json\\n/, '').replace(/\\n\\x60\\x60\\x60\\s*$/, ''));
+        extractedQuestions = JSON.parse(responseText.trim().replace(/^\\s*\x60\x60\x60json\n/, '').replace(/\n\x60\x60\x60\s*$/, ''));
       } catch (parseError) {
-        console.error("Gemini Response parsing error:", parseError, "\\nResponse Text:", responseText);
+        console.error("Gemini Response parsing error:", parseError, "\nResponse Text:", responseText);
         res.status(500).json({ error: 'Failed to parse AI response into JSON. Check server logs.' });
         return;
       }
@@ -296,16 +359,32 @@ No other text, markdown, or explanations outside the JSON array.`;
         correctAnswerIndex: typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0
       }));
 
-      const newQuiz: Quiz = {
-        id: uuidv4(),
-        topicId,
-        title,
-        questions: formattedQuestions,
-        createdAt: Date.now()
-      };
-      await insertData('quizzes', newQuiz);
-
-      res.json(newQuiz);
+      if (quizId) {
+        // Append to existing quiz
+        const quizzes = await getData<Quiz>('quizzes');
+        const existingQuiz = quizzes.find(q => q.id === quizId);
+        if (!existingQuiz) {
+           res.status(404).json({ error: 'Quiz not found' });
+           return;
+        }
+        
+        await updateData('quizzes', quizId, {
+          questions: [...existingQuiz.questions, ...formattedQuestions]
+        });
+        
+        res.json({ ...existingQuiz, questions: [...existingQuiz.questions, ...formattedQuestions] });
+      } else {
+        // Create new quiz
+        const newQuiz: Quiz = {
+          id: uuidv4(),
+          topicId,
+          title,
+          questions: formattedQuestions,
+          createdAt: Date.now()
+        };
+        await insertData('quizzes', newQuiz);
+        res.json(newQuiz);
+      }
     } catch (e: any) {
        console.error("Error generating quiz:", e);
        res.status(500).json({ error: e.message || 'Error communicating with AI model' });
@@ -344,8 +423,9 @@ No other text, markdown, or explanations outside the JSON array.`;
 async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-  if (process.env.NODE_ENV !== "production") {
-    const { createServer: createViteServer } = await import('vite');
+  if (!process.env.VERCEL && process.env.NODE_ENV !== "production") {
+    const viteName = 'vite';
+    const { createServer: createViteServer } = await import(viteName);
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
