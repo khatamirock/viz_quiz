@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { BookOpen, FolderOpen, LayoutDashboard, BrainCircuit, Upload, Play, CheckCircle } from 'lucide-react';
+import { BookOpen, FolderOpen, LayoutDashboard, BrainCircuit, Upload, Play, CheckCircle, Settings as SettingsIcon } from 'lucide-react';
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -9,6 +9,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Topics', path: '/topics', icon: FolderOpen },
     { name: 'Create Quiz', path: '/create', icon: Upload },
+    { name: 'Settings', path: '/settings', icon: SettingsIcon },
   ];
 
   return (

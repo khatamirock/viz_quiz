@@ -179,11 +179,12 @@ export const app = express();
 app.use(express.json());
 
 // Wait to initialize Gemini so that missing API keys do not block app startup.
-function getGeminiClient(): GoogleGenAI {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY environment variable is not set');
+function getGeminiClient(customApiKey?: string): GoogleGenAI {
+  const apiKey = customApiKey || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY environment variable is not set and no custom key provided');
   }
-  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  return new GoogleGenAI({ apiKey });
 }
 
 // --- API Routes ---
@@ -355,7 +356,8 @@ function getGeminiClient(): GoogleGenAI {
         return;
       }
 
-      const client = getGeminiClient();
+      const customApiKey = req.headers['x-gemini-api-key'] as string | undefined;
+      const client = getGeminiClient(customApiKey);
       
       const prompt = `You are an AI assistant designed to extract multiple choice questions from educational material.
 Please extract all readable questions from the provided input (image or text) and format them as multiple-choice questions.
