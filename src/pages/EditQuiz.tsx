@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Quiz, QuizQuestion } from '../types';
 import { useData } from '../lib/hooks';
 import { Loader2, Save, Trash2, Plus, ArrowLeft } from 'lucide-react';
+import PasskeyModal from '../components/PasskeyModal';
 
 export default function EditQuiz() {
   const { quizId } = useParams();
@@ -10,6 +11,7 @@ export default function EditQuiz() {
   const [quizzes, setQuizzes, loading, error] = useData<Quiz[]>('/api/quizzes', []);
   const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
   const [saving, setSaving] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState<number | null>(null);
 
   const originalQuiz = quizzes.find(q => q.id === quizId);
 
@@ -49,16 +51,17 @@ export default function EditQuiz() {
     updateQuestion(qIndex, { ...q, options });
   };
 
-  const removeQuestion = (index: number) => {
-    const passkey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
-    const input = window.prompt("এই প্রশ্নটি মুছে ফেলার জন্য পাস-কী দিন:");
-    if (input !== passkey) {
+  const removeQuestion = (passkey: string) => {
+    if (questionToDelete === null) return;
+    const correctPasskey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
+    if (passkey !== correctPasskey) {
       alert("ভুল পাস-কী!");
       return;
     }
 
-    const questions = editingQuiz.questions.filter((_, i) => i !== index);
+    const questions = editingQuiz.questions.filter((_, i) => i !== questionToDelete);
     setEditingQuiz({ ...editingQuiz, questions });
+    setQuestionToDelete(null);
   };
 
   const addQuestion = () => {
@@ -125,7 +128,7 @@ export default function EditQuiz() {
         {editingQuiz.questions.map((q, qIndex) => (
           <div key={q.id} className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm relative">
              <button 
-                onClick={() => removeQuestion(qIndex)}
+                onClick={() => setQuestionToDelete(qIndex)}
                 className="absolute top-4 right-4 p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-md transition"
                 title="প্রশ্ন মুছুন"
              >
@@ -176,6 +179,12 @@ export default function EditQuiz() {
          <Plus size={20} />
          <span>নতুন প্রশ্ন যুক্ত করুন</span>
       </button>      
+      
+      <PasskeyModal 
+        isOpen={questionToDelete !== null}
+        onClose={() => setQuestionToDelete(null)}
+        onSubmit={removeQuestion}
+      />
     </div>
   );
 }

@@ -3,31 +3,36 @@ import { useData } from '../lib/hooks';
 import { Topic, Quiz, QuizAttempt } from '../types';
 import { Link } from 'react-router-dom';
 import { Folder, Play, CheckCircle, BarChart2, Trash2, Edit2 } from 'lucide-react';
+import PasskeyModal from '../components/PasskeyModal';
 
 export default function Dashboard() {
   const [quizzes, setQuizzes] = useData<Quiz[]>('/api/quizzes', []);
   const [attempts] = useData<QuizAttempt[]>('/api/progress', []);
   const [topics] = useData<Topic[]>('/api/topics', []);
+  
+  const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
 
   const totalTaken = attempts.length;
 
-  const handleDeleteQuiz = async (quizId: string) => {
-    const passkey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
-    const input = window.prompt("মুছে ফেলার জন্য পাস-কী দিন:");
-    if (input !== passkey) {
+  const handleDeleteQuiz = async (passkey: string) => {
+    if (!quizToDelete) return;
+    const correctPasskey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
+    if (passkey !== correctPasskey) {
       alert("ভুল পাস-কী!");
       return;
     }
     
     try {
-      const res = await fetch(`/api/quizzes/${quizId}`, {
+      const res = await fetch(`/api/quizzes/${quizToDelete}`, {
         method: 'DELETE'
       });
       if (res.ok) {
-        setQuizzes(quizzes.filter(q => q.id !== quizId));
+        setQuizzes(quizzes.filter(q => q.id !== quizToDelete));
       }
     } catch(err) {
       console.error(err);
+    } finally {
+      setQuizToDelete(null);
     }
   };
 
@@ -124,37 +129,33 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              {[...quizzes].reverse().map(quiz => (
-               <QuizCard key={quiz.id} quiz={quiz} topics={topics} onDelete={() => handleDeleteQuiz(quiz.id)} />
+               <QuizCard key={quiz.id} quiz={quiz} topics={topics} onDelete={() => setQuizToDelete(quiz.id)} />
              ))}
           </div>
         )}
       </div>
+      
+      <PasskeyModal 
+        isOpen={!!quizToDelete}
+        onClose={() => setQuizToDelete(null)}
+        onSubmit={handleDeleteQuiz}
+      />
     </div>
   );
 }
 
 function QuizCard({ quiz, topics, onDelete }: { quiz: Quiz, topics: Topic[], onDelete: () => void }) {
-  const [showConfirm, setShowConfirm] = useState(false);
-
   return (
     <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm flex flex-col group">
       <div className="flex justify-between items-start mb-1">
         <h3 className="font-medium text-lg">{quiz.title}</h3>
-        {showConfirm ? (
-          <div className="flex space-x-1 text-sm bg-red-50 p-1 rounded">
-             <button onClick={onDelete} className="text-red-600 font-medium hover:underline">হ্যাঁ</button>
-             <span className="text-red-400">/</span>
-             <button onClick={() => setShowConfirm(false)} className="text-neutral-500 hover:underline">না</button>
-          </div>
-        ) : (
-          <button 
-            onClick={() => setShowConfirm(true)}
-            className="text-neutral-400 hover:text-red-500 p-1 rounded-md opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-            title="ক্যুইজ মুছুন"
-          >
-            <Trash2 size={16} />
-          </button>
-        )}
+        <button 
+          onClick={onDelete}
+          className="text-neutral-400 hover:text-red-500 p-1 rounded-md opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+          title="ক্যুইজ মুছুন"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
       <p className="text-sm text-neutral-500 mb-4 flex-1">
         {quiz.questions.length}টি প্রশ্ন • বিষয়: {topics.find(t => t.id === quiz.topicId)?.name || 'অজানা'}

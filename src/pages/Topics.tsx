@@ -3,6 +3,7 @@ import { useData } from '../lib/hooks';
 import { Topic, Quiz } from '../types';
 import { Folder, Plus, Trash2, Edit2, Check, X, Play, ChevronDown, ChevronRight, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import PasskeyModal from '../components/PasskeyModal';
 
 export default function Topics() {
   const [topics, setTopics] = useData<Topic[]>('/api/topics', []);
@@ -10,6 +11,9 @@ export default function Topics() {
   const [newTopicName, setNewTopicName] = useState('');
   const [selectedParentId, setSelectedParentId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+
+  const [topicToDelete, setTopicToDelete] = useState<string | null>(null);
+  const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,16 +59,16 @@ export default function Topics() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const passkey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
-    const input = window.prompt("মুছে ফেলার জন্য পাস-কী দিন:");
-    if (input !== passkey) {
+  const handleDelete = async (passkey: string) => {
+    if (!topicToDelete) return;
+    const correctPasskey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
+    if (passkey !== correctPasskey) {
       alert("ভুল পাস-কী!");
       return;
     }
     
     try {
-      const res = await fetch(`/api/topics/${id}`, {
+      const res = await fetch(`/api/topics/${topicToDelete}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -76,24 +80,28 @@ export default function Topics() {
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setTopicToDelete(null);
     }
   };
 
-  const handleDeleteQuiz = async (id: string) => {
-    const passkey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
-    const input = window.prompt("মুছে ফেলার জন্য পাস-কী দিন:");
-    if (input !== passkey) {
+  const handleDeleteQuiz = async (passkey: string) => {
+    if (!quizToDelete) return;
+    const correctPasskey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
+    if (passkey !== correctPasskey) {
       alert("ভুল পাস-কী!");
       return;
     }
     
     try {
-      const res = await fetch(`/api/quizzes/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/quizzes/${quizToDelete}`, { method: 'DELETE' });
       if (res.ok) {
-        setQuizzes(quizzes.filter(q => q.id !== id));
+        setQuizzes(quizzes.filter(q => q.id !== quizToDelete));
       }
     } catch(err) {
       console.error(err);
+    } finally {
+      setQuizToDelete(null);
     }
   };
 
@@ -154,14 +162,27 @@ export default function Topics() {
                 quizzes={quizzes}
                 getChildren={getChildren} 
                 depth={0} 
-                onDelete={handleDelete}
+                onDelete={(id) => setTopicToDelete(id)}
                 onUpdate={handleUpdate}
-                onDeleteQuiz={handleDeleteQuiz}
+                onDeleteQuiz={(id) => setQuizToDelete(id)}
               />
             ))}
           </div>
         </div>
       </div>
+
+      <PasskeyModal 
+         isOpen={!!topicToDelete}
+         onClose={() => setTopicToDelete(null)}
+         onSubmit={handleDelete}
+         title="বিষয় মুছুন"
+      />
+      <PasskeyModal 
+         isOpen={!!quizToDelete}
+         onClose={() => setQuizToDelete(null)}
+         onSubmit={handleDeleteQuiz}
+         title="ক্যুইজ মুছুন"
+      />
     </div>
   );
 }
@@ -197,7 +218,6 @@ function TopicItem({
     setIsEditing(false);
   };
 
-  const [showConfirm, setShowConfirm] = useState(false);
   const topicQuizzes = quizzes.filter(q => q.topicId === topic.id);
   const hasContent = children.length > 0 || topicQuizzes.length > 0;
 
@@ -236,12 +256,6 @@ function TopicItem({
               setIsEditing(false);
             }} className="p-1 text-red-600 hover:bg-red-50 rounded"><X size={16} /></button>
           </div>
-        ) : showConfirm ? (
-          <div className="flex items-center space-x-2 flex-1 text-sm text-red-600 font-medium">
-             <span className="flex-1">বিষয় এবং ক্যুইজ মুছবেন?</span>
-             <button onClick={() => onDelete(topic.id)} className="px-2 py-1 bg-red-100 hover:bg-red-200 rounded">হ্যাঁ</button>
-             <button onClick={() => setShowConfirm(false)} className="px-2 py-1 bg-neutral-200 hover:bg-neutral-300 rounded text-neutral-800">না</button>
-          </div>
         ) : (
           <>
             <div className="flex-1 flex items-center space-x-2">
@@ -256,12 +270,14 @@ function TopicItem({
               <button 
                 onClick={() => setIsEditing(true)}
                 className="p-1.5 text-neutral-500 hover:text-black hover:bg-neutral-200 rounded-md"
+                title="নাম পরিবর্তন করুন"
               >
                 <Edit2 size={14} />
               </button>
               <button 
-                onClick={() => setShowConfirm(true)}
+                onClick={() => onDelete(topic.id)}
                 className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md"
+                title="বিষয় মুছুন"
               >
                 <Trash2 size={14} />
               </button>
