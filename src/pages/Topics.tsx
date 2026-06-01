@@ -209,7 +209,7 @@ function TopicItem({
         ) : (
           <>
             <span className="font-medium flex-1">{topic.name}</span>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+            <div className="opacity-100 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex space-x-2">
               {topicQuizzes.length > 0 && (
                 <Link
                   to={`/quiz/${topicQuizzes[0].id}`}

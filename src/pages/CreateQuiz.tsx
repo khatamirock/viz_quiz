@@ -54,14 +54,12 @@ export default function CreateQuiz() {
 
     try {
       const customApiKey = localStorage.getItem('gemini_api_key') || '';
-      const headers: Record<string, string> = {};
       if (customApiKey) {
-        headers['x-gemini-api-key'] = customApiKey;
+        formData.append('customApiKey', customApiKey);
       }
 
       const res = await fetch('/api/generate-quiz', {
         method: 'POST',
-        headers,
         body: formData,
       });
 

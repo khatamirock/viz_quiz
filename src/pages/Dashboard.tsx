@@ -95,7 +95,7 @@ function QuizCard({ quiz, topics, onDelete }: { quiz: Quiz, topics: Topic[], onD
         ) : (
           <button 
             onClick={() => setShowConfirm(true)}
-            className="text-neutral-400 hover:text-red-500 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+            className="text-neutral-400 hover:text-red-500 p-1 rounded-md opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
             title="Delete Quiz"
           >
             <Trash2 size={16} />

@@ -356,7 +356,7 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
         return;
       }
 
-      const customApiKey = req.headers['x-gemini-api-key'] as string | undefined;
+      const customApiKey = req.body.customApiKey;
       const client = getGeminiClient(customApiKey);
       
       const prompt = `You are an AI assistant designed to extract multiple choice questions from educational material.
@@ -373,8 +373,9 @@ Return the output ONLY as a JSON array of objects, structured like this:
 ]
 No other text, markdown, or explanations outside the JSON array.`;
 
-      const modelsToTry = ['gemini-3.5-flash', 'gemma-4-26b-a4b-it', 'gemini-2.5-flash'];
+      const modelsToTry = ['gemini-3.5-flash', 'gemma-4-26b-a4b-it', 'gemini-2.5-flash', 'gemma-2-27b-it', 'gemini-2.0-flash'];
       let responseText = null;
+      let lastErrorMsg = null;
       
       for (const modelName of modelsToTry) {
         try {
@@ -392,17 +393,17 @@ No other text, markdown, or explanations outside the JSON array.`;
           }
 
           const response = await client.models.generateContent({
-            model: modelName,
-            contents: [
-              {
-                role: 'user',
-                parts: parts
-              }
-            ],
-            config: {
-                temperature: 0.2,
-                responseMimeType: "application/json"
-            }
+             model: modelName,
+             contents: [
+               {
+                 role: 'user',
+                 parts: parts
+               }
+             ],
+             config: {
+                 temperature: 0.2,
+                 responseMimeType: "application/json"
+             }
           });
           
           if (response.text) {
@@ -411,11 +412,12 @@ No other text, markdown, or explanations outside the JSON array.`;
           }
         } catch (err: any) {
           console.warn(`Model ${modelName} failed:`, err.message);
+          lastErrorMsg = err.message;
         }
       }
       
       if (!responseText) {
-        throw new Error('All models failed to generate content or resulted in an empty response.');
+        throw new Error(`All models failed to generate content. Last error: ${lastErrorMsg || 'Unknown error'}`);
       }
       
       responseText = responseText || '[]';
