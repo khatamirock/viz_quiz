@@ -13,6 +13,8 @@ export default function EditQuiz() {
   const [saving, setSaving] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<number | null>(null);
 
+  const [showSaveModal, setShowSaveModal] = useState(false);
+
   const originalQuiz = quizzes.find(q => q.id === quizId);
 
   useEffect(() => {
@@ -74,8 +76,15 @@ export default function EditQuiz() {
     setEditingQuiz({ ...editingQuiz, questions: [...editingQuiz.questions, newQuestion] });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (passkey: string) => {
+    const correctPasskey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
+    if (passkey !== correctPasskey) {
+      alert("ভুল পাস-কী!");
+      return;
+    }
+
     setSaving(true);
+    setShowSaveModal(false);
     try {
       // API call to save the quiz
       // Since useData doesn't have an update method for an individual item by default, 
@@ -115,7 +124,7 @@ export default function EditQuiz() {
           <p className="text-sm text-neutral-500 mt-1">ভুল প্রশ্ন বা অপশনগুলো এখান থেকে সংশোধন করুন।</p>
         </div>
         <button 
-           onClick={handleSave} 
+           onClick={() => setShowSaveModal(true)} 
            disabled={saving || editingQuiz.questions.length === 0}
            className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition disabled:opacity-50 flex items-center gap-2 shadow-sm"
         >
@@ -184,6 +193,12 @@ export default function EditQuiz() {
         isOpen={questionToDelete !== null}
         onClose={() => setQuestionToDelete(null)}
         onSubmit={removeQuestion}
+      />
+      <PasskeyModal 
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onSubmit={handleSave}
+        title="ক্যুইজ সংরক্ষণ করুন"
       />
     </div>
   );

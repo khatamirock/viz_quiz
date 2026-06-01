@@ -13,6 +13,7 @@ export default function Topics() {
   const [error, setError] = useState<string | null>(null);
 
   const [topicToDelete, setTopicToDelete] = useState<string | null>(null);
+  const [topicToUpdate, setTopicToUpdate] = useState<{id: string, name: string} | null>(null);
   const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -44,18 +45,27 @@ export default function Topics() {
     }
   };
 
-  const handleUpdate = async (id: string, newName: string) => {
+  const handleUpdate = async (passkey: string) => {
+    if (!topicToUpdate) return;
+    const correctPasskey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
+    if (passkey !== correctPasskey) {
+      alert("ভুল পাস-কী!");
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/topics/${id}`, {
+      const res = await fetch(`/api/topics/${topicToUpdate.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName })
+        body: JSON.stringify({ name: topicToUpdate.name })
       });
       if (res.ok) {
-        setTopics(topics.map(t => t.id === id ? { ...t, name: newName } : t));
+        setTopics(topics.map(t => t.id === topicToUpdate.id ? { ...t, name: topicToUpdate.name } : t));
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      setTopicToUpdate(null);
     }
   };
 
@@ -163,7 +173,7 @@ export default function Topics() {
                 getChildren={getChildren} 
                 depth={0} 
                 onDelete={(id) => setTopicToDelete(id)}
-                onUpdate={handleUpdate}
+                onUpdate={(id, name) => setTopicToUpdate({id, name})}
                 onDeleteQuiz={(id) => setQuizToDelete(id)}
               />
             ))}
@@ -176,6 +186,12 @@ export default function Topics() {
          onClose={() => setTopicToDelete(null)}
          onSubmit={handleDelete}
          title="বিষয় মুছুন"
+      />
+      <PasskeyModal 
+         isOpen={!!topicToUpdate}
+         onClose={() => setTopicToUpdate(null)}
+         onSubmit={handleUpdate}
+         title="বিষয় সম্পাদনা করুন"
       />
       <PasskeyModal 
          isOpen={!!quizToDelete}
