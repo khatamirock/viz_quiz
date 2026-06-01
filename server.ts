@@ -218,7 +218,7 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
     try {
       const { name } = req.body;
       const { id } = req.params;
-      await updateData('topics', id, { name });
+      await updateData<Topic>('topics', id, { name });
       res.json({ id, name });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -330,11 +330,13 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       if (isMongoConnected) {
         await QuizModel.findOneAndUpdate({ id }, updatedQuiz);
       } else {
-        const quizzes = readDb().quizzes;
-        const index = quizzes.findIndex(q => q.id === id);
+        const store = await getKV();
+        const quizzes = (store['quizzes'] as Quiz[]) || [];
+        const index = quizzes.findIndex((q: Quiz) => q.id === id);
         if (index !== -1) {
           quizzes[index] = updatedQuiz;
-          writeDb({ ...readDb(), quizzes });
+          store['quizzes'] = quizzes;
+          await setKV(store);
         } else {
           return res.status(404).json({ error: 'Quiz not found' });
         }
@@ -475,7 +477,7 @@ No other text, markdown, or explanations outside the JSON array.`;
            return;
         }
         
-        await updateData('quizzes', quizId, {
+        await updateData<Quiz>('quizzes', quizId, {
           questions: [...existingQuiz.questions, ...formattedQuestions]
         });
         
