@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 export default function Topics() {
   const [topics, setTopics] = useData<Topic[]>('/api/topics', []);
-  const [quizzes] = useData<Quiz[]>('/api/quizzes', []); // To check if topic has quizzes
+  const [quizzes, setQuizzes] = useData<Quiz[]>('/api/quizzes', []); // To check if topic has quizzes
   const [newTopicName, setNewTopicName] = useState('');
   const [selectedParentId, setSelectedParentId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +56,13 @@ export default function Topics() {
   };
 
   const handleDelete = async (id: string) => {
+    const passkey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
+    const input = window.prompt("মুছে ফেলার জন্য পাস-কী দিন:");
+    if (input !== passkey) {
+      alert("ভুল পাস-কী!");
+      return;
+    }
+    
     try {
       const res = await fetch(`/api/topics/${id}`, {
         method: 'DELETE'
@@ -68,6 +75,24 @@ export default function Topics() {
         }
       }
     } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteQuiz = async (id: string) => {
+    const passkey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
+    const input = window.prompt("মুছে ফেলার জন্য পাস-কী দিন:");
+    if (input !== passkey) {
+      alert("ভুল পাস-কী!");
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/quizzes/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setQuizzes(quizzes.filter(q => q.id !== id));
+      }
+    } catch(err) {
       console.error(err);
     }
   };
@@ -131,6 +156,7 @@ export default function Topics() {
                 depth={0} 
                 onDelete={handleDelete}
                 onUpdate={handleUpdate}
+                onDeleteQuiz={handleDeleteQuiz}
               />
             ))}
           </div>
@@ -146,14 +172,16 @@ function TopicItem({
   getChildren, 
   depth,
   onDelete,
-  onUpdate
+  onUpdate,
+  onDeleteQuiz
 }: { 
   topic: Topic,
   quizzes: Quiz[],
   getChildren: (id: string) => Topic[], 
   depth: number,
   onDelete: (id: string) => void,
-  onUpdate: (id: string, name: string) => void
+  onUpdate: (id: string, name: string) => void,
+  onDeleteQuiz: (id: string) => void
 }) {
   const children = getChildren(topic.id);
   const [isEditing, setIsEditing] = useState(false);
@@ -258,6 +286,13 @@ function TopicItem({
                  <div className="text-xs text-neutral-500">{quiz.questions.length}টি প্রশ্ন</div>
               </div>
               <div className="flex space-x-2">
+                 <button
+                    onClick={() => onDeleteQuiz(quiz.id)}
+                    className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-neutral-100 rounded-md"
+                    title="ক্যুইজ মুছুন"
+                 >
+                    <Trash2 size={14} />
+                 </button>
                  <Link
                      to={`/edit-quiz/${quiz.id}`}
                      className="p-1.5 text-neutral-500 hover:text-black hover:bg-neutral-100 rounded-md flex items-center space-x-1 text-xs font-medium"
@@ -286,6 +321,7 @@ function TopicItem({
               depth={depth + 1} 
               onDelete={onDelete}
               onUpdate={onUpdate}
+              onDeleteQuiz={onDeleteQuiz}
             />
           ))}
         </div>

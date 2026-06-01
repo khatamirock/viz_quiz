@@ -12,6 +12,13 @@ export default function Dashboard() {
   const totalTaken = attempts.length;
 
   const handleDeleteQuiz = async (quizId: string) => {
+    const passkey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
+    const input = window.prompt("মুছে ফেলার জন্য পাস-কী দিন:");
+    if (input !== passkey) {
+      alert("ভুল পাস-কী!");
+      return;
+    }
+    
     try {
       const res = await fetch(`/api/quizzes/${quizId}`, {
         method: 'DELETE'
@@ -135,15 +142,15 @@ function QuizCard({ quiz, topics, onDelete }: { quiz: Quiz, topics: Topic[], onD
         <h3 className="font-medium text-lg">{quiz.title}</h3>
         {showConfirm ? (
           <div className="flex space-x-1 text-sm bg-red-50 p-1 rounded">
-             <button onClick={onDelete} className="text-red-600 font-medium hover:underline">Yes</button>
+             <button onClick={onDelete} className="text-red-600 font-medium hover:underline">হ্যাঁ</button>
              <span className="text-red-400">/</span>
-             <button onClick={() => setShowConfirm(false)} className="text-neutral-500 hover:underline">No</button>
+             <button onClick={() => setShowConfirm(false)} className="text-neutral-500 hover:underline">না</button>
           </div>
         ) : (
           <button 
             onClick={() => setShowConfirm(true)}
             className="text-neutral-400 hover:text-red-500 p-1 rounded-md opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-            title="Delete Quiz"
+            title="ক্যুইজ মুছুন"
           >
             <Trash2 size={16} />
           </button>

@@ -50,6 +50,13 @@ export default function EditQuiz() {
   };
 
   const removeQuestion = (index: number) => {
+    const passkey = import.meta.env.VITE_DELETE_PASSKEY || '1234';
+    const input = window.prompt("এই প্রশ্নটি মুছে ফেলার জন্য পাস-কী দিন:");
+    if (input !== passkey) {
+      alert("ভুল পাস-কী!");
+      return;
+    }
+
     const questions = editingQuiz.questions.filter((_, i) => i !== index);
     setEditingQuiz({ ...editingQuiz, questions });
   };
