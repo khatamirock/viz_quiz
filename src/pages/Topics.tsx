@@ -55,13 +55,17 @@ export default function Topics() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this topic? It might break quizzes inside it.')) return;
+    if (!window.confirm('Are you sure you want to delete this topic and all its subtopics, quizzes, and history?')) return;
     try {
       const res = await fetch(`/api/topics/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
-        setTopics(topics.filter(t => t.id !== id));
+        const fetchRes = await fetch('/api/topics');
+        if (fetchRes.ok) {
+          const freshTopics = await fetchRes.json();
+          setTopics(freshTopics);
+        }
       }
     } catch (err) {
       console.error(err);

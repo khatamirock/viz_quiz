@@ -227,8 +227,55 @@ function getGeminiClient(): GoogleGenAI {
   app.delete('/api/topics/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      await deleteData('topics', id);
-      res.json({ success: true });
+      const isMongoConnected = await connectDB();
+      
+      let topics: Topic[] = [];
+      if (isMongoConnected) {
+        topics = (await TopicModel.find({}, '-_id -__v').lean()) as unknown as Topic[];
+      } else {
+        const store = await getKV();
+        topics = (store['topics'] as Topic[]) || [];
+      }
+
+      const topicIdsToDelete = new Set<string>();
+      const collectChildren = (parentId: string) => {
+        topicIdsToDelete.add(parentId);
+        const children = topics.filter(t => t.parentId === parentId);
+        for (const child of children) {
+          collectChildren(child.id);
+        }
+      };
+      collectChildren(id);
+      
+      const topicIdsArray = Array.from(topicIdsToDelete);
+      
+      let quizzes: Quiz[] = [];
+      if (isMongoConnected) {
+        quizzes = (await QuizModel.find({}, '-_id -__v').lean()) as unknown as Quiz[];
+      } else {
+        const store = await getKV();
+        quizzes = (store['quizzes'] as Quiz[]) || [];
+      }
+      
+      const quizIdsToDelete = quizzes.filter(q => topicIdsArray.includes(q.topicId)).map(q => q.id);
+
+      if (isMongoConnected) {
+        await TopicModel.deleteMany({ id: { $in: topicIdsArray } });
+        if (quizIdsToDelete.length > 0) {
+          await QuizModel.deleteMany({ id: { $in: quizIdsToDelete } });
+          await AttemptModel.deleteMany({ quizId: { $in: quizIdsToDelete } });
+        }
+      } else {
+        const store = await getKV();
+        store['topics'] = (store['topics'] as Topic[] || []).filter(t => !topicIdsArray.includes(t.id));
+        if (quizIdsToDelete.length > 0) {
+          store['quizzes'] = (store['quizzes'] as Quiz[] || []).filter(q => !quizIdsToDelete.includes(q.id));
+          store['attempts'] = ((store['attempts'] as QuizAttempt[]) || []).filter(a => !quizIdsToDelete.includes(a.quizId));
+        }
+        await setKV(store);
+      }
+
+      res.json({ success: true, deletedTopics: topicIdsArray.length, deletedQuizzes: quizIdsToDelete.length });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -258,7 +305,16 @@ function getGeminiClient(): GoogleGenAI {
   app.delete('/api/quizzes/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      await deleteData('quizzes', id);
+      const isMongoConnected = await connectDB();
+      if (isMongoConnected) {
+        await QuizModel.findOneAndDelete({ id });
+        await AttemptModel.deleteMany({ quizId: id });
+      } else {
+        const store = await getKV();
+        store['quizzes'] = ((store['quizzes'] as Quiz[]) || []).filter(q => q.id !== id);
+        store['attempts'] = ((store['attempts'] as QuizAttempt[]) || []).filter(a => a.quizId !== id);
+        await setKV(store);
+      }
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
