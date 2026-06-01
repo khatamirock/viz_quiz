@@ -373,7 +373,7 @@ Return the output ONLY as a JSON array of objects, structured like this:
 ]
 No other text, markdown, or explanations outside the JSON array.`;
 
-      const modelsToTry = ['gemini-3.5-flash', 'gemma-4-26b-a4b-it', 'gemini-2.5-flash', 'gemma-2-27b-it', 'gemini-2.0-flash'];
+      const modelsToTry = ['gemini-3.5-flash', 'gemma-4-26b-a4b-it'];
       let responseText = null;
       let lastErrorMsg = null;
       
