@@ -1,0 +1,6 @@
+{
+  "name": "VisionQuiz",
+  "description": "Create interactive quizzes from uploaded textbook images using the Gemini model. Track progress and organize topics in a nested hierarchy.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
