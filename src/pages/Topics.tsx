@@ -55,7 +55,6 @@ export default function Topics() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this topic and all its subtopics, quizzes, and history?')) return;
     try {
       const res = await fetch(`/api/topics/${id}`, {
         method: 'DELETE'
@@ -165,6 +164,8 @@ function TopicItem({
     setIsEditing(false);
   };
 
+  const [showConfirm, setShowConfirm] = useState(false);
+
   return (
     <div className="space-y-2">
       <div 
@@ -194,6 +195,12 @@ function TopicItem({
               setIsEditing(false);
             }} className="p-1 text-red-600 hover:bg-red-50 rounded"><X size={16} /></button>
           </div>
+        ) : showConfirm ? (
+          <div className="flex items-center space-x-2 flex-1 text-sm text-red-600 font-medium">
+             <span className="flex-1">Delete topic & quizzes?</span>
+             <button onClick={() => onDelete(topic.id)} className="px-2 py-1 bg-red-100 hover:bg-red-200 rounded">Yes</button>
+             <button onClick={() => setShowConfirm(false)} className="px-2 py-1 bg-neutral-200 hover:bg-neutral-300 rounded text-neutral-800">No</button>
+          </div>
         ) : (
           <>
             <span className="font-medium flex-1">{topic.name}</span>
@@ -205,7 +212,7 @@ function TopicItem({
                 <Edit2 size={14} />
               </button>
               <button 
-                onClick={() => onDelete(topic.id)}
+                onClick={() => setShowConfirm(true)}
                 className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md"
               >
                 <Trash2 size={14} />

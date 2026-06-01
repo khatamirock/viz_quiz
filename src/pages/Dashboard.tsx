@@ -15,7 +15,6 @@ export default function Dashboard() {
     : 0;
 
   const handleDeleteQuiz = async (quizId: string) => {
-    if (!window.confirm("Are you sure you want to delete this quiz?")) return;
     try {
       const res = await fetch(`/api/quizzes/${quizId}`, {
         method: 'DELETE'
@@ -71,29 +70,45 @@ export default function Dashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              {[...quizzes].reverse().map(quiz => (
-               <div key={quiz.id} className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm flex flex-col group">
-                 <div className="flex justify-between items-start mb-1">
-                   <h3 className="font-medium text-lg">{quiz.title}</h3>
-                   <button 
-                     onClick={() => handleDeleteQuiz(quiz.id)}
-                     className="text-neutral-400 hover:text-red-500 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
-                     title="Delete Quiz"
-                   >
-                     <Trash2 size={16} />
-                   </button>
-                 </div>
-                 <p className="text-sm text-neutral-500 mb-4 flex-1">
-                   {quiz.questions.length} questions â€¢ Topic: {topics.find(t => t.id === quiz.topicId)?.name || 'Unknown'}
-                 </p>
-                 <Link to={`/quiz/${quiz.id}`} className="inline-flex items-center space-x-2 text-sm font-medium text-black hover:opacity-70 transition">
-                   <Play size={16} />
-                   <span>Start Quiz</span>
-                 </Link>
-               </div>
+               <QuizCard key={quiz.id} quiz={quiz} topics={topics} onDelete={() => handleDeleteQuiz(quiz.id)} />
              ))}
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function QuizCard({ quiz, topics, onDelete }: { quiz: Quiz, topics: Topic[], onDelete: () => void }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  return (
+    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm flex flex-col group">
+      <div className="flex justify-between items-start mb-1">
+        <h3 className="font-medium text-lg">{quiz.title}</h3>
+        {showConfirm ? (
+          <div className="flex space-x-1 text-sm bg-red-50 p-1 rounded">
+             <button onClick={onDelete} className="text-red-600 font-medium hover:underline">Yes</button>
+             <span className="text-red-400">/</span>
+             <button onClick={() => setShowConfirm(false)} className="text-neutral-500 hover:underline">No</button>
+          </div>
+        ) : (
+          <button 
+            onClick={() => setShowConfirm(true)}
+            className="text-neutral-400 hover:text-red-500 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Delete Quiz"
+          >
+            <Trash2 size={16} />
+          </button>
+        )}
+      </div>
+      <p className="text-sm text-neutral-500 mb-4 flex-1">
+        {quiz.questions.length} questions • Topic: {topics.find(t => t.id === quiz.topicId)?.name || 'Unknown'}
+      </p>
+      <Link to={`/quiz/${quiz.id}`} className="inline-flex items-center space-x-2 text-sm font-medium text-black hover:opacity-70 transition">
+        <Play size={16} />
+        <span>Start Quiz</span>
+      </Link>
     </div>
   );
 }

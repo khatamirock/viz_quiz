@@ -372,7 +372,7 @@ Return the output ONLY as a JSON array of objects, structured like this:
 No other text, markdown, or explanations outside the JSON array.`;
 
       const response = await client.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.0-flash',
         contents: [
           {
             role: 'user',
