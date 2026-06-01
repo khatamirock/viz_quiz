@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useData } from '../lib/hooks';
 import { Topic, Quiz } from '../types';
-import { Folder, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
+import { Folder, Plus, Trash2, Edit2, Check, X, Play } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Topics() {
   const [topics, setTopics] = useData<Topic[]>('/api/topics', []);
@@ -124,7 +125,8 @@ export default function Topics() {
             {topLevel.map(topic => (
               <TopicItem 
                 key={topic.id} 
-                topic={topic} 
+                topic={topic}
+                quizzes={quizzes}
                 getChildren={getChildren} 
                 depth={0} 
                 onDelete={handleDelete}
@@ -139,13 +141,15 @@ export default function Topics() {
 }
 
 function TopicItem({ 
-  topic, 
+  topic,
+  quizzes,
   getChildren, 
   depth,
   onDelete,
   onUpdate
 }: { 
-  topic: Topic, 
+  topic: Topic,
+  quizzes: Quiz[],
   getChildren: (id: string) => Topic[], 
   depth: number,
   onDelete: (id: string) => void,
@@ -165,6 +169,7 @@ function TopicItem({
   };
 
   const [showConfirm, setShowConfirm] = useState(false);
+  const topicQuizzes = quizzes.filter(q => q.topicId === topic.id);
 
   return (
     <div className="space-y-2">
@@ -205,6 +210,15 @@ function TopicItem({
           <>
             <span className="font-medium flex-1">{topic.name}</span>
             <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+              {topicQuizzes.length > 0 && (
+                <Link
+                  to={`/quiz/${topicQuizzes[0].id}`}
+                  className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md"
+                  title="Start Quiz"
+                >
+                  <Play size={14} fill="currentColor" />
+                </Link>
+              )}
               <button 
                 onClick={() => setIsEditing(true)}
                 className="p-1.5 text-neutral-500 hover:text-black hover:bg-neutral-200 rounded-md"
@@ -224,7 +238,8 @@ function TopicItem({
       {children.map(child => (
         <TopicItem 
           key={child.id} 
-          topic={child} 
+          topic={child}
+          quizzes={quizzes}
           getChildren={getChildren} 
           depth={depth + 1} 
           onDelete={onDelete}
