@@ -362,12 +362,13 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       const prompt = `You are an AI assistant designed to extract multiple choice questions from educational material.
 Please extract all readable questions from the provided input (image or text) and format them as multiple-choice questions.
 If no options are present in the text, generate 3 plausible distractors and one correct option and infer the correct answer.
-If options are present, use those exactly. 
+If options are present, use those exactly.
+CRITICAL: ALL text output (questions and options) MUST be in Bengali (Bangla). Please translate them if they are in English.
 Return the output ONLY as a JSON array of objects, structured like this:
 [
   {
-    "question": "The question text?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "question": "Question text in Bengali?",
+    "options": ["Option A in Bengali", "Option B in Bengali", "Option C in Bengali", "Option D in Bengali"],
     "correctAnswerIndex": 0
   }
 ]

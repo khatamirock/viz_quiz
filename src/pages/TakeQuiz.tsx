@@ -23,8 +23,8 @@ export default function TakeQuiz() {
   if (error || !quiz) {
     return (
        <div className="text-center py-20 text-neutral-500">
-         <p>Quiz not found.</p>
-         <button onClick={() => navigate('/')} className="mt-4 px-4 py-2 border rounded-lg text-sm font-medium hover:bg-neutral-50">Back to Dashboard</button>
+         <p>ক্যুইজ পাওয়া যায়নি।</p>
+         <button onClick={() => navigate('/')} className="mt-4 px-4 py-2 border rounded-lg text-sm font-medium hover:bg-neutral-50">ড্যাশবোর্ডে ফিরে যান</button>
        </div>
     );
   }
@@ -79,10 +79,10 @@ export default function TakeQuiz() {
     
     return (
       <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-         <div className="bg-white p-6 md:p-12 rounded-3xl border border-neutral-200 shadow-sm text-center">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-4">Quiz Completed</h2>
+          <div className="bg-white p-6 md:p-12 rounded-3xl border border-neutral-200 shadow-sm text-center">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-4">ক্যুইজ সম্পন্ন</h2>
             <div className="text-5xl md:text-6xl font-bold mb-4">{Math.round((score / quiz.questions.length) * 100)}%</div>
-            <p className="text-neutral-500 mb-8">You scored {score} out of {quiz.questions.length}</p>
+            <p className="text-neutral-500 mb-8">আপনি {quiz.questions.length} এর মধ্যে {score} পেয়েছেন</p>
             
             <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
               <button 
@@ -94,19 +94,19 @@ export default function TakeQuiz() {
                 className="px-6 py-3 rounded-xl border border-neutral-200 font-medium flex items-center space-x-2 hover:bg-neutral-50"
               >
                 <RefreshCcw size={18} />
-                <span>Retry</span>
+                <span>আবার চেষ্টা করুন</span>
               </button>
               <button 
                 onClick={() => navigate('/')} 
                 className="px-6 py-3 bg-black text-white rounded-xl font-medium hover:bg-neutral-800"
               >
-                Dashboard
+                ড্যাশবোর্ড
               </button>
             </div>
          </div>
          
          <div className="space-y-4">
-           <h3 className="text-xl font-semibold">Review Answers</h3>
+           <h3 className="text-xl font-semibold">উত্তর পর্যালোচনা করুন</h3>
            {quiz.questions.map((q, idx) => {
               const uAns = selectedAnswers[idx];
               const isCorrect = uAns === q.correctAnswerIndex;
@@ -146,9 +146,9 @@ export default function TakeQuiz() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div>
-         <button onClick={() => navigate('/')} className="text-sm text-neutral-500 hover:text-black mb-4">â† Dashboard</button>
+         <button onClick={() => navigate('/')} className="text-sm text-neutral-500 hover:text-black mb-4">← ড্যাশবোর্ড</button>
          <h1 className="text-2xl font-semibold tracking-tight">{quiz.title}</h1>
-         <p className="text-sm text-neutral-500 mt-1">Question {currentIndex + 1} of {quiz.questions.length}</p>
+         <p className="text-sm text-neutral-500 mt-1">প্রশ্ন {currentIndex + 1} / {quiz.questions.length}</p>
          
          <div className="w-full bg-neutral-200 h-1.5 rounded-full mt-4 overflow-hidden">
             <div 
@@ -198,12 +198,12 @@ export default function TakeQuiz() {
               {saving ? (
                 <>
                   <Loader2 className="animate-spin" size={18} />
-                  <span>Saving...</span>
+                  <span>সংরক্ষণ করা হচ্ছে...</span>
                 </>
               ) : (
                 <>
                   <span>
-                     {currentIndex === quiz.questions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+                     {currentIndex === quiz.questions.length - 1 ? 'ক্যুইজ শেষ করুন' : 'পরবর্তী প্রশ্ন'}
                   </span>
                   {currentIndex !== quiz.questions.length - 1 && <ArrowRight size={18} />}
                 </>

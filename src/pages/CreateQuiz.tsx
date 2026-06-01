@@ -80,8 +80,8 @@ export default function CreateQuiz() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
       <div>
-         <h1 className="text-3xl font-semibold tracking-tight mb-2">Extract Questions</h1>
-         <p className="text-neutral-500">Upload a picture of a textbook page or paste lesson text. Our AI will automatically extract and format the questions into a quiz.</p>
+         <h1 className="text-3xl font-semibold tracking-tight mb-2">প্রশ্ন বের করুন</h1>
+         <p className="text-neutral-500">বইয়ের পাতার ছবি আপলোড করুন অথবা পড়ার বিষয়বস্তু পেস্ট করুন। আমাদের এআই স্বয়ংক্রিয়ভাবে সেখান থেকে ক্যুইজ তৈরি করবে।</p>
       </div>
 
       <form onSubmit={handleGenerate} className="bg-white p-8 rounded-2xl border border-neutral-200 shadow-sm space-y-6">
@@ -92,30 +92,30 @@ export default function CreateQuiz() {
          )}
          
          <div className="flex space-x-2 p-1 bg-neutral-100 rounded-lg">
-           <button
+             <button
              type="button"
              onClick={() => setMode('new')}
              className={`flex-1 py-2 text-sm font-medium rounded-md transition ${mode === 'new' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}
            >
-             Create New Quiz
+             নতুন ক্যুইজ তৈরি করুন
            </button>
            <button
              type="button"
              onClick={() => setMode('append')}
              className={`flex-1 py-2 text-sm font-medium rounded-md transition ${mode === 'append' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}
            >
-             Add to Existing Quiz
+             বিদ্যমান ক্যুইজে যুক্ত করুন
            </button>
          </div>
 
          {mode === 'new' ? (
            <>
              <div className="space-y-1">
-                <label className="block text-sm font-medium text-neutral-700">Quiz Title</label>
+                <label className="block text-sm font-medium text-neutral-700">ক্যুইজের শিরোনাম</label>
                 <input 
                   type="text" 
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
-                  placeholder="e.g. History Chapter 4 Review"
+                  placeholder="যেমন: ইতিহাস অধ্যায় ৪"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required={mode === 'new'}
@@ -123,47 +123,47 @@ export default function CreateQuiz() {
              </div>
 
              <div className="space-y-1">
-                <label className="block text-sm font-medium text-neutral-700">Topic</label>
+                <label className="block text-sm font-medium text-neutral-700">বিষয়</label>
                 <select 
                   className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
                   value={topicId}
                   onChange={(e) => setTopicId(e.target.value)}
                   required={mode === 'new'}
                 >
-                  <option value="" disabled>Select a topic</option>
+                  <option value="" disabled>একটি বিষয় নির্বাচন করুন</option>
                   {topics.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
                 {topics.length === 0 && (
-                  <p className="text-xs text-neutral-500 mt-1">Make sure you create a topic first in the Topics tab.</p>
+                  <p className="text-xs text-neutral-500 mt-1">প্রথমে বিষয়সমূহ ট্যাব থেকে একটি বিষয় তৈরি করে নিন।</p>
                 )}
              </div>
            </>
          ) : (
            <div className="space-y-1">
-              <label className="block text-sm font-medium text-neutral-700">Select Existing Quiz</label>
+              <label className="block text-sm font-medium text-neutral-700">বিদ্যমান ক্যুইজ নির্বাচন করুন</label>
               <select 
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
                 value={selectedQuizId}
                 onChange={(e) => setSelectedQuizId(e.target.value)}
                 required={mode === 'append'}
               >
-                <option value="" disabled>Select a quiz to append to</option>
+                <option value="" disabled>যুক্ত করার জন্য একটি ক্যুইজ বেছে নিন</option>
                 {quizzes.map(q => (
                   <option key={q.id} value={q.id}>
-                    {q.title} ({topics.find(t => t.id === q.topicId)?.name || 'Unknown Topic'})
+                    {q.title} ({topics.find(t => t.id === q.topicId)?.name || 'অজানা বিষয়'})
                   </option>
                 ))}
               </select>
               {quizzes.length === 0 && (
-                <p className="text-xs text-neutral-500 mt-1">You don't have any quizzes yet to append to.</p>
+                <p className="text-xs text-neutral-500 mt-1">যুক্ত করার মতো কোনো ক্যুইজ নেই।</p>
               )}
            </div>
          )}
 
          <div className="space-y-2">
-            <label className="block text-sm font-medium text-neutral-700">Upload Image</label>
+            <label className="block text-sm font-medium text-neutral-700">ছবি আপলোড করুন</label>
             <div 
               className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
                 file ? 'border-green-500 bg-green-50' : 'border-neutral-300 hover:bg-neutral-50'
@@ -174,14 +174,14 @@ export default function CreateQuiz() {
                  <div className="flex flex-col items-center justify-center space-y-2 text-green-700">
                    <ImageIcon size={32} />
                    <span className="font-medium">{file.name}</span>
-                   <span className="text-xs opacity-80 pl-2">Click to change</span>
+                   <span className="text-xs opacity-80 pl-2">পরিবর্তন করতে ক্লিক করুন</span>
                  </div>
                ) : (
                  <div className="flex flex-col items-center justify-center space-y-3 text-neutral-500">
                    <UploadCloud size={40} className="text-neutral-400" />
                    <div>
-                     <p className="font-medium text-neutral-700">Click to upload or drag and drop</p>
-                     <p className="text-sm mt-1">PNG, JPG, JPEG up to 10MB</p>
+                     <p className="font-medium text-neutral-700">ছবি আপলোড করতে ক্লিক করুন অথবা টেনে আনুন</p>
+                     <p className="text-sm mt-1">PNG, JPG, JPEG সর্বোচ্চ ১০এমবি (10MB)</p>
                    </div>
                  </div>
                )}
@@ -206,10 +206,10 @@ export default function CreateQuiz() {
          </div>
 
          <div className="space-y-2">
-            <label className="block text-sm font-medium text-neutral-700">Paste Text</label>
+            <label className="block text-sm font-medium text-neutral-700">টেক্সট পেস্ট করুন</label>
             <textarea
               className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5 min-h-[120px] resize-y"
-              placeholder="Paste your educational text, lesson notes, or existing questions here..."
+              placeholder="আপনার পড়ার বিষয়বস্তু বা পরীক্ষার নোট এখানে পেস্ট করুন..."
               value={textContent}
               onChange={(e) => setTextContent(e.target.value)}
             />
@@ -223,10 +223,10 @@ export default function CreateQuiz() {
            {loading ? (
              <>
                <Loader2 className="animate-spin" size={20} />
-               <span>Extracting Questions using AI...</span>
+               <span>এআই দিয়ে ক্যুইজ তৈরি করা হচ্ছে...</span>
              </>
            ) : (
-             <span>{mode === 'new' ? 'Generate New Quiz' : 'Add Questions to Quiz'}</span>
+             <span>{mode === 'new' ? 'নতুন ক্যুইজ তৈরি করুন' : 'ক্যুইজে প্রশ্ন যুক্ত করুন'}</span>
            )}
          </button>
       </form>

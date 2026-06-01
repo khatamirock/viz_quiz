@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useData } from '../lib/hooks';
 import { Topic, Quiz } from '../types';
-import { Folder, Plus, Trash2, Edit2, Check, X, Play } from 'lucide-react';
+import { Folder, Plus, Trash2, Edit2, Check, X, Play, ChevronDown, ChevronRight, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Topics() {
@@ -78,8 +78,8 @@ export default function Topics() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight mb-2">Topics structure</h1>
-        <p className="text-neutral-500">Organize your quizzes logically by creating nested topic categories. You can also rename or delete them.</p>
+        <h1 className="text-3xl font-semibold tracking-tight mb-2">বিষয়সমূহের গঠন</h1>
+        <p className="text-neutral-500">নেস্টেড বিষয়ের ক্যাটাগরি তৈরি করে আপনার ক্যুইজগুলো যৌক্তিকভাবে সাজান। আপনি এগুলোর নাম পরিবর্তন বা মুছে ফেলার কাজও করতে পারেন।</p>
       </div>
 
       <div className="bg-white p-6 rounded-2xl border border-neutral-200">
@@ -90,23 +90,23 @@ export default function Topics() {
         )}
         <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-3 sm:items-end mb-8">
            <div className="flex-1 space-y-1 w-full sm:w-auto">
-             <label className="text-sm font-medium text-neutral-700">Topic Name</label>
+             <label className="text-sm font-medium text-neutral-700">বিষয়ের নাম</label>
              <input 
                type="text" 
                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5" 
-               placeholder="e.g. Physics, Chapter 1, Kinematics..."
+               placeholder="যেমন: পদার্থবিজ্ঞান, অধ্যায় ১, গতিবিদ্যা..."
                value={newTopicName}
                onChange={e => setNewTopicName(e.target.value)}
              />
            </div>
            <div className="flex-1 space-y-1 w-full sm:w-auto">
-             <label className="text-sm font-medium text-neutral-700">Parent Topic (Optional)</label>
+             <label className="text-sm font-medium text-neutral-700">পেরেন্ট বিষয় (ঐচ্ছিক)</label>
              <select 
                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
                value={selectedParentId}
                onChange={e => setSelectedParentId(e.target.value)}
              >
-                <option value="">None (Top Level)</option>
+                <option value="">কোনোটি না (শীর্ষ স্তর)</option>
                 {topics.map(t => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -114,13 +114,13 @@ export default function Topics() {
            </div>
            <button type="submit" className="w-full sm:w-auto justify-center px-4 py-2 bg-black text-white rounded-lg flex items-center space-x-2 font-medium hover:bg-neutral-800 transition">
              <Plus size={18} />
-             <span>Add Topic</span>
+             <span>বিষয় যুক্ত করুন</span>
            </button>
         </form>
 
         <div className="space-y-4">
-          <h2 className="text-lg font-medium border-b border-neutral-100 pb-2">Topic Hierarchy</h2>
-          {topLevel.length === 0 && <p className="text-sm text-neutral-500">No topics created yet.</p>}
+          <h2 className="text-lg font-medium border-b border-neutral-100 pb-2">বিষয়ের স্তর</h2>
+          {topLevel.length === 0 && <p className="text-sm text-neutral-500">এখনও কোনো বিষয় তৈরি করা হয়নি।</p>}
           <div className="space-y-2">
             {topLevel.map(topic => (
               <TopicItem 
@@ -158,6 +158,7 @@ function TopicItem({
   const children = getChildren(topic.id);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(topic.name);
+  const [isExpanded, setIsExpanded] = useState(false);
   
   const handleSave = () => {
     if (editName.trim() && editName !== topic.name) {
@@ -170,6 +171,7 @@ function TopicItem({
 
   const [showConfirm, setShowConfirm] = useState(false);
   const topicQuizzes = quizzes.filter(q => q.topicId === topic.id);
+  const hasContent = children.length > 0 || topicQuizzes.length > 0;
 
   return (
     <div className="space-y-2">
@@ -177,6 +179,12 @@ function TopicItem({
         className="flex items-center space-x-3 p-3 bg-neutral-50 rounded-lg border border-neutral-100 group" 
         style={{ marginLeft: `${depth * 24}px` }}
       >
+        <button 
+          onClick={() => hasContent && setIsExpanded(!isExpanded)}
+          className={`p-1 -ml-1 rounded flex items-center justify-center shrink-0 w-6 h-6 ${hasContent ? 'hover:bg-neutral-200 text-neutral-600' : 'text-transparent cursor-default'}`}
+        >
+          {hasContent && (isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />)}
+        </button>
         <Folder size={18} className="text-neutral-400 shrink-0" />
         {isEditing ? (
           <div className="flex items-center space-x-2 flex-1">
@@ -202,23 +210,21 @@ function TopicItem({
           </div>
         ) : showConfirm ? (
           <div className="flex items-center space-x-2 flex-1 text-sm text-red-600 font-medium">
-             <span className="flex-1">Delete topic & quizzes?</span>
-             <button onClick={() => onDelete(topic.id)} className="px-2 py-1 bg-red-100 hover:bg-red-200 rounded">Yes</button>
-             <button onClick={() => setShowConfirm(false)} className="px-2 py-1 bg-neutral-200 hover:bg-neutral-300 rounded text-neutral-800">No</button>
+             <span className="flex-1">বিষয় এবং ক্যুইজ মুছবেন?</span>
+             <button onClick={() => onDelete(topic.id)} className="px-2 py-1 bg-red-100 hover:bg-red-200 rounded">হ্যাঁ</button>
+             <button onClick={() => setShowConfirm(false)} className="px-2 py-1 bg-neutral-200 hover:bg-neutral-300 rounded text-neutral-800">না</button>
           </div>
         ) : (
           <>
-            <span className="font-medium flex-1">{topic.name}</span>
+            <div className="flex-1 flex items-center space-x-2">
+               <span className="font-medium cursor-pointer" onClick={() => hasContent && setIsExpanded(!isExpanded)}>{topic.name}</span>
+               {topicQuizzes.length > 0 && (
+                 <span className="text-xs px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded-full">
+                   {topicQuizzes.length} ক্যুইজ
+                 </span>
+               )}
+            </div>
             <div className="opacity-100 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex space-x-2">
-              {topicQuizzes.length > 0 && (
-                <Link
-                  to={`/quiz/${topicQuizzes[0].id}`}
-                  className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md"
-                  title="Start Quiz"
-                >
-                  <Play size={14} fill="currentColor" />
-                </Link>
-              )}
               <button 
                 onClick={() => setIsEditing(true)}
                 className="p-1.5 text-neutral-500 hover:text-black hover:bg-neutral-200 rounded-md"
@@ -235,17 +241,45 @@ function TopicItem({
           </>
         )}
       </div>
-      {children.map(child => (
-        <TopicItem 
-          key={child.id} 
-          topic={child}
-          quizzes={quizzes}
-          getChildren={getChildren} 
-          depth={depth + 1} 
-          onDelete={onDelete}
-          onUpdate={onUpdate}
-        />
-      ))}
+      
+      {isExpanded && (
+        <div className="animate-in fade-in slide-in-from-top-2 duration-200 space-y-2">
+          {topicQuizzes.map(quiz => (
+            <div 
+               key={`quiz-${quiz.id}`}
+               className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-neutral-100 group"
+               style={{ marginLeft: `${(depth + 1) * 24}px` }}
+            >
+              <div className="w-6 shrink-0 flex items-center justify-center">
+                 <FileText size={16} className="text-blue-400" />
+              </div>
+              <div className="flex-1">
+                 <div className="font-medium text-sm">{quiz.title}</div>
+                 <div className="text-xs text-neutral-500">{quiz.questions.length}টি প্রশ্ন</div>
+              </div>
+              <Link
+                  to={`/quiz/${quiz.id}`}
+                  className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md flex items-center space-x-1 text-xs font-medium"
+                  title="ক্যুইজ শুরু করুন"
+                >
+                  <Play size={14} fill="currentColor" />
+                  <span className="hidden sm:inline">শুরু করুন</span>
+              </Link>
+            </div>
+          ))}
+          {children.map(child => (
+            <TopicItem 
+              key={child.id} 
+              topic={child}
+              quizzes={quizzes}
+              getChildren={getChildren} 
+              depth={depth + 1} 
+              onDelete={onDelete}
+              onUpdate={onUpdate}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

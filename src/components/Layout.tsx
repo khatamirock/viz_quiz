@@ -6,10 +6,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
 
   const navItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { name: 'Topics', path: '/topics', icon: FolderOpen },
-    { name: 'Create Quiz', path: '/create', icon: Upload },
-    { name: 'Settings', path: '/settings', icon: SettingsIcon },
+    { name: 'ড্যাশবোর্ড', path: '/', icon: LayoutDashboard },
+    { name: 'বিষয়সমূহ', path: '/topics', icon: FolderOpen },
+    { name: 'ক্যুইজ তৈরি', path: '/create', icon: Upload },
+    { name: 'সেটিংস', path: '/settings', icon: SettingsIcon },
   ];
 
   return (

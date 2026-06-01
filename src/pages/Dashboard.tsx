@@ -60,22 +60,22 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight mb-2">Dashboard</h1>
-        <p className="text-neutral-500">Welcome back. Track your quiz performance and start learning.</p>
+        <h1 className="text-3xl font-semibold tracking-tight mb-2">ড্যাশবোর্ড</h1>
+        <p className="text-neutral-500">স্বাগতম। আপনার ক্যুইজ পারফরম্যান্স ট্র্যাক করুন এবং শেখা শুরু করুন।</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
           <div className="flex items-center space-x-3 mb-4 text-neutral-600">
             <CheckCircle size={20} />
-            <span className="font-medium">Quizzes Completed</span>
+            <span className="font-medium">সম্পন্ন করা ক্যুইজ</span>
           </div>
           <span className="text-4xl font-semibold">{totalTaken}</span>
         </div>
         <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
           <div className="flex items-center space-x-3 mb-4 text-neutral-600">
             <Folder size={20} />
-            <span className="font-medium">Total Topics</span>
+            <span className="font-medium">মোট বিষয়</span>
           </div>
           <span className="text-4xl font-semibold">{topics.length}</span>
         </div>
@@ -85,7 +85,7 @@ export default function Dashboard() {
         <div>
           <h2 className="text-xl font-semibold tracking-tight mb-4 flex items-center gap-2">
             <BarChart2 size={20} />
-            Average Scores by Topic
+            বিষয় অনুযায়ী গড় স্কোর
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
              {parentScores.map(ts => (
@@ -93,7 +93,7 @@ export default function Dashboard() {
                   <div className="flex justify-between items-start mb-4">
                     <span className="font-medium text-lg leading-tight mr-4">{ts.name}</span>
                     <span className="text-xs px-2 py-1 bg-neutral-100 rounded-lg text-neutral-600 whitespace-nowrap">
-                      {ts.attemptsCount} attempt{ts.attemptsCount !== 1 ? 's' : ''}
+                      {ts.attemptsCount} বার
                     </span>
                   </div>
                   <div className="flex items-baseline gap-2">
@@ -106,12 +106,12 @@ export default function Dashboard() {
       )}
 
       <div>
-        <h2 className="text-xl font-semibold tracking-tight mb-4">Recent Quizzes</h2>
+        <h2 className="text-xl font-semibold tracking-tight mb-4">সাম্প্রতিক ক্যুইজগুলো</h2>
         {quizzes.length === 0 ? (
           <div className="text-center p-12 bg-white rounded-2xl border border-neutral-200 border-dashed">
-             <p className="text-neutral-500 mb-4">No quizzes created yet.</p>
+             <p className="text-neutral-500 mb-4">এখনও কোনো ক্যুইজ নেই।</p>
              <Link to="/create" className="px-4 py-2 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition">
-               Create your first quiz
+               প্রথম ক্যুইজ তৈরি করুন
              </Link>
           </div>
         ) : (
@@ -150,11 +150,11 @@ function QuizCard({ quiz, topics, onDelete }: { quiz: Quiz, topics: Topic[], onD
         )}
       </div>
       <p className="text-sm text-neutral-500 mb-4 flex-1">
-        {quiz.questions.length} questions • Topic: {topics.find(t => t.id === quiz.topicId)?.name || 'Unknown'}
+        {quiz.questions.length}টি প্রশ্ন • বিষয়: {topics.find(t => t.id === quiz.topicId)?.name || 'অজানা'}
       </p>
       <Link to={`/quiz/${quiz.id}`} className="inline-flex items-center space-x-2 text-sm font-medium text-black hover:opacity-70 transition">
         <Play size={16} />
-        <span>Start Quiz</span>
+        <span>ক্যুইজ শুরু করুন</span>
       </Link>
     </div>
   );
