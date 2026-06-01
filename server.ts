@@ -339,14 +339,14 @@ function getGeminiClient(): GoogleGenAI {
      }
   });
 
-  // Generate Quiz from Image using Gemini
+  // Generate Quiz from Image or Text using Gemini
   app.post('/api/generate-quiz', upload.single('image'), async (req, res) => {
     try {
       const file = req.file;
-      const { topicId, title, quizId } = req.body;
+      const { topicId, title, quizId, textContent } = req.body;
 
-      if (!file) {
-        res.status(400).json({ error: 'No image uploaded' });
+      if (!file && !textContent) {
+        res.status(400).json({ error: 'No image or text provided' });
         return;
       }
 
@@ -357,8 +357,8 @@ function getGeminiClient(): GoogleGenAI {
 
       const client = getGeminiClient();
       
-      const prompt = `You are an AI assistant designed to extract multiple choice questions from textbook images.
-Please extract all readable questions from the image and format them as multiple-choice questions.
+      const prompt = `You are an AI assistant designed to extract multiple choice questions from educational material.
+Please extract all readable questions from the provided input (image or text) and format them as multiple-choice questions.
 If no options are present in the text, generate 3 plausible distractors and one correct option and infer the correct answer.
 If options are present, use those exactly. 
 Return the output ONLY as a JSON array of objects, structured like this:
@@ -371,25 +371,30 @@ Return the output ONLY as a JSON array of objects, structured like this:
 ]
 No other text, markdown, or explanations outside the JSON array.`;
 
-      const modelsToTry = ['gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+      const modelsToTry = ['gemini-3.5-flash', 'gemma-2-27b-it', 'gemini-3.1-pro-preview', 'gemini-2.0-flash-exp'];
       let responseText = null;
       
       for (const modelName of modelsToTry) {
         try {
+          const parts: any[] = [{ text: prompt }];
+          if (textContent) {
+            parts.push({ text: `\n\nInput Text Content:\n${textContent}` });
+          }
+          if (file) {
+            parts.push({
+              inlineData: {
+                data: file.buffer.toString('base64'),
+                mimeType: file.mimetype,
+              }
+            });
+          }
+
           const response = await client.models.generateContent({
             model: modelName,
             contents: [
               {
                 role: 'user',
-                parts: [
-                  { text: prompt },
-                  {
-                    inlineData: {
-                      data: file.buffer.toString('base64'),
-                      mimeType: file.mimetype,
-                    }
-                  }
-                ]
+                parts: parts
               }
             ],
             config: {

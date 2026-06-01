@@ -8,6 +8,7 @@ export default function CreateQuiz() {
   const [topics] = useData<Topic[]>('/api/topics', []);
   const [quizzes] = useData<Quiz[]>('/api/quizzes', []);
   const [file, setFile] = useState<File | null>(null);
+  const [textContent, setTextContent] = useState('');
   
   const [mode, setMode] = useState<'new' | 'append'>('new');
   const [topicId, setTopicId] = useState<string>('');
@@ -22,13 +23,13 @@ export default function CreateQuiz() {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) {
-       setError("Please select an image.");
+    if (!file && !textContent.trim()) {
+       setError("Please select an image or paste some text.");
        return;
     }
     
     if (mode === 'new' && (!topicId || !title)) {
-       setError("Please fill all fields.");
+       setError("Please fill all required fields.");
        return;
     }
     
@@ -41,7 +42,9 @@ export default function CreateQuiz() {
     setError(null);
 
     const formData = new FormData();
-    formData.append('image', file);
+    if (file) formData.append('image', file);
+    if (textContent.trim()) formData.append('textContent', textContent.trim());
+
     if (mode === 'new') {
       formData.append('topicId', topicId);
       formData.append('title', title);
@@ -73,7 +76,7 @@ export default function CreateQuiz() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
       <div>
          <h1 className="text-3xl font-semibold tracking-tight mb-2">Extract Questions</h1>
-         <p className="text-neutral-500">Upload a picture of a textbook page. Our AI will automatically extract and format the questions into a quiz.</p>
+         <p className="text-neutral-500">Upload a picture of a textbook page or paste lesson text. Our AI will automatically extract and format the questions into a quiz.</p>
       </div>
 
       <form onSubmit={handleGenerate} className="bg-white p-8 rounded-2xl border border-neutral-200 shadow-sm space-y-6">
@@ -188,6 +191,22 @@ export default function CreateQuiz() {
                     setFile(e.target.files[0]);
                  }
               }}
+            />
+         </div>
+
+         <div className="flex items-center space-x-4 my-2">
+           <div className="flex-1 h-px bg-neutral-200"></div>
+           <span className="text-sm font-medium text-neutral-400">OR</span>
+           <div className="flex-1 h-px bg-neutral-200"></div>
+         </div>
+
+         <div className="space-y-2">
+            <label className="block text-sm font-medium text-neutral-700">Paste Text</label>
+            <textarea
+              className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5 min-h-[120px] resize-y"
+              placeholder="Paste your educational text, lesson notes, or existing questions here..."
+              value={textContent}
+              onChange={(e) => setTextContent(e.target.value)}
             />
          </div>
 
