@@ -7,6 +7,8 @@ import CreateQuiz from './pages/CreateQuiz';
 import TakeQuiz from './pages/TakeQuiz';
 import Settings from './pages/Settings';
 
+import EditQuiz from './pages/EditQuiz';
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -16,6 +18,7 @@ export default function App() {
           <Route path="/topics" element={<Topics />} />
           <Route path="/create" element={<CreateQuiz />} />
           <Route path="/quiz/:quizId" element={<TakeQuiz />} />
+          <Route path="/edit-quiz/:quizId" element={<EditQuiz />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </Layout>

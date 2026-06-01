@@ -257,14 +257,24 @@ function TopicItem({
                  <div className="font-medium text-sm">{quiz.title}</div>
                  <div className="text-xs text-neutral-500">{quiz.questions.length}টি প্রশ্ন</div>
               </div>
-              <Link
-                  to={`/quiz/${quiz.id}`}
-                  className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md flex items-center space-x-1 text-xs font-medium"
-                  title="ক্যুইজ শুরু করুন"
-                >
-                  <Play size={14} fill="currentColor" />
-                  <span className="hidden sm:inline">শুরু করুন</span>
-              </Link>
+              <div className="flex space-x-2">
+                 <Link
+                     to={`/edit-quiz/${quiz.id}`}
+                     className="p-1.5 text-neutral-500 hover:text-black hover:bg-neutral-100 rounded-md flex items-center space-x-1 text-xs font-medium"
+                     title="সম্পাদনা করুন"
+                   >
+                     <Edit2 size={14} />
+                     <span className="hidden sm:inline">সম্পাদনা</span>
+                 </Link>
+                 <Link
+                     to={`/quiz/${quiz.id}`}
+                     className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md flex items-center space-x-1 text-xs font-medium"
+                     title="ক্যুইজ শুরু করুন"
+                   >
+                     <Play size={14} fill="currentColor" />
+                     <span className="hidden sm:inline">শুরু করুন</span>
+                 </Link>
+              </div>
             </div>
           ))}
           {children.map(child => (

@@ -322,6 +322,29 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
     }
   });
 
+  app.put('/api/quizzes/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updatedQuiz = req.body;
+      const isMongoConnected = await connectDB();
+      if (isMongoConnected) {
+        await QuizModel.findOneAndUpdate({ id }, updatedQuiz);
+      } else {
+        const quizzes = readDb().quizzes;
+        const index = quizzes.findIndex(q => q.id === id);
+        if (index !== -1) {
+          quizzes[index] = updatedQuiz;
+          writeDb({ ...readDb(), quizzes });
+        } else {
+          return res.status(404).json({ error: 'Quiz not found' });
+        }
+      }
+      res.json(updatedQuiz);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Create Quiz manually or edit
   app.post('/api/quizzes', async (req, res) => {
      try {

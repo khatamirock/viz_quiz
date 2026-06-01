@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useData } from '../lib/hooks';
 import { Topic, Quiz, QuizAttempt } from '../types';
 import { Link } from 'react-router-dom';
-import { Folder, Play, CheckCircle, BarChart2, Trash2 } from 'lucide-react';
+import { Folder, Play, CheckCircle, BarChart2, Trash2, Edit2 } from 'lucide-react';
 
 export default function Dashboard() {
   const [quizzes, setQuizzes] = useData<Quiz[]>('/api/quizzes', []);
@@ -152,10 +152,16 @@ function QuizCard({ quiz, topics, onDelete }: { quiz: Quiz, topics: Topic[], onD
       <p className="text-sm text-neutral-500 mb-4 flex-1">
         {quiz.questions.length}টি প্রশ্ন • বিষয়: {topics.find(t => t.id === quiz.topicId)?.name || 'অজানা'}
       </p>
-      <Link to={`/quiz/${quiz.id}`} className="inline-flex items-center space-x-2 text-sm font-medium text-black hover:opacity-70 transition">
-        <Play size={16} />
-        <span>ক্যুইজ শুরু করুন</span>
-      </Link>
+      <div className="flex items-center space-x-4 mt-auto">
+        <Link to={`/quiz/${quiz.id}`} className="inline-flex items-center space-x-2 text-sm font-medium text-black hover:opacity-70 transition">
+          <Play size={16} />
+          <span>ক্যুইজ শুরু করুন</span>
+        </Link>
+        <Link to={`/edit-quiz/${quiz.id}`} className="inline-flex items-center space-x-2 text-sm font-medium text-neutral-500 hover:text-black transition">
+          <Edit2 size={16} />
+          <span>সম্পাদনা</span>
+        </Link>
+      </div>
     </div>
   );
 }
