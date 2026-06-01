@@ -371,29 +371,47 @@ Return the output ONLY as a JSON array of objects, structured like this:
 ]
 No other text, markdown, or explanations outside the JSON array.`;
 
-      const response = await client.models.generateContent({
-        model: 'gemini-1.5-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: prompt },
+      const modelsToTry = ['gemini-3.5-flash', 'gemini-3.1-pro-preview', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+      let responseText = null;
+      
+      for (const modelName of modelsToTry) {
+        try {
+          const response = await client.models.generateContent({
+            model: modelName,
+            contents: [
               {
-                inlineData: {
-                  data: file.buffer.toString('base64'),
-                  mimeType: file.mimetype,
-                }
+                role: 'user',
+                parts: [
+                  { text: prompt },
+                  {
+                    inlineData: {
+                      data: file.buffer.toString('base64'),
+                      mimeType: file.mimetype,
+                    }
+                  }
+                ]
               }
-            ]
+            ],
+            config: {
+                temperature: 0.2,
+                responseMimeType: "application/json"
+            }
+          });
+          
+          if (response.text) {
+            responseText = response.text;
+            break;
           }
-        ],
-        config: {
-            temperature: 0.2,
-            responseMimeType: "application/json"
+        } catch (err: any) {
+          console.warn(`Model ${modelName} failed:`, err.message);
         }
-      });
-
-      const responseText = response.text || '[]';
+      }
+      
+      if (!responseText) {
+        throw new Error('All models failed to generate content or resulted in an empty response.');
+      }
+      
+      responseText = responseText || '[]';
       let extractedQuestions = [];
       try {
         extractedQuestions = JSON.parse(responseText.trim().replace(/^\\s*\x60\x60\x60json\n/, '').replace(/\n\x60\x60\x60\s*$/, ''));
