@@ -43,25 +43,31 @@ const AttemptModel = mongoose.model('Attempt', AttemptSchema);
 
 let isConnected = false;
 async function connectDB() {
-  if (isConnected) return true;
+  if (isConnected && mongoose.connection.readyState === 1) return true;
+  
   if (!process.env.MONGODB_URI) {
-    return false; // Fallback to local files
+    if (process.env.VERCEL) {
+      throw new Error("MONGODB_URI environment variable is not set. Please configure it in your Vercel project settings.");
+    }
+    return false; // Fallback to local files for local dev
   }
   
   if (mongoose.connection.readyState !== 1) {
     try {
-      await mongoose.connect(process.env.MONGODB_URI);
+      await mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000 // Error out quickly in serverless environments
+      });
       isConnected = true;
     } catch (error) {
       console.error("MongoDB connection error:", error);
-      return false;
+      throw new Error(`MongoDB Connection Error: ${(error as Error).message}. If you are using MongoDB Atlas, ensure your Network Access IP Whitelist includes '0.0.0.0/0' to allow Vercel to connect.`);
     }
   }
   return true;
 }
 
 // --- Local File Fallback (For Development/Preview) ---
-const KV_FILE = 'kv_store.json';
+const KV_FILE = process.env.VERCEL ? '/tmp/kv_store.json' : 'kv_store.json';
 type KVStore = Record<string, any>;
 
 async function getKV(): Promise<KVStore> {

@@ -7,25 +7,34 @@ export default function Topics() {
   const [topics, setTopics] = useData<Topic[]>('/api/topics', []);
   const [newTopicName, setNewTopicName] = useState('');
   const [selectedParentId, setSelectedParentId] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTopicName.trim()) return;
+    setError(null);
     
-    const res = await fetch('/api/topics', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: newTopicName,
-        parentId: selectedParentId || undefined
-      })
-    });
-    
-    if (res.ok) {
+    try {
+      const res = await fetch('/api/topics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newTopicName,
+          parentId: selectedParentId || undefined
+        })
+      });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to create topic');
+      }
+
       const created = await res.json();
       setTopics([...topics, created]);
       setNewTopicName('');
       setSelectedParentId('');
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
@@ -41,6 +50,11 @@ export default function Topics() {
       </div>
 
       <div className="bg-white p-6 rounded-2xl border border-neutral-200">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-3 sm:items-end mb-8">
            <div className="flex-1 space-y-1 w-full sm:w-auto">
              <label className="text-sm font-medium text-neutral-700">Topic Name</label>
