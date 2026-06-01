@@ -44,6 +44,9 @@ export default function Settings() {
               {isSaved ? 'Saved!' : 'Save Key'}
             </button>
           </div>
+          <p className="text-sm text-neutral-500 mt-2">
+            Get your Gemini API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
+          </p>
           <p className="text-sm text-neutral-500">
             If left empty, the server's default environment key will be used instead.
             Providing a key here will override it for your browser session.
