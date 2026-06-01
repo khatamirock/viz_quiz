@@ -1,7 +1,6 @@
 import express from 'express';
 import path from 'path';
 import multer from 'multer';
-import { createServer as createViteServer } from 'vite';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import { GoogleGenAI } from '@google/genai';
@@ -340,6 +339,7 @@ async function startServer() {
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
