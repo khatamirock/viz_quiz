@@ -125,7 +125,7 @@ export default function Topics() {
         <p className="text-neutral-500">নেস্টেড বিষয়ের ক্যাটাগরি তৈরি করে আপনার ক্যুইজগুলো যৌক্তিকভাবে সাজান। আপনি এগুলোর নাম পরিবর্তন বা মুছে ফেলার কাজও করতে পারেন।</p>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl border border-neutral-200">
+      <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800">
         {error && (
           <div className="mb-6 p-4 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
             {error}
@@ -155,7 +155,7 @@ export default function Topics() {
                 ))}
              </select>
            </div>
-           <button type="submit" className="w-full sm:w-auto justify-center px-4 py-2 bg-black text-white rounded-lg flex items-center space-x-2 font-medium hover:bg-neutral-800 transition">
+           <button type="submit" className="w-full sm:w-auto justify-center px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg flex items-center space-x-2 font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition">
              <Plus size={18} />
              <span>বিষয় যুক্ত করুন</span>
            </button>
@@ -240,7 +240,7 @@ function TopicItem({
   return (
     <div className="space-y-2">
       <div 
-        className="flex items-center space-x-3 p-3 bg-neutral-50 rounded-lg border border-neutral-100 group" 
+        className="flex items-center space-x-3 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg border border-neutral-100 dark:border-neutral-800 group" 
         style={{ marginLeft: `${depth * 24}px` }}
       >
         <button 
@@ -283,6 +283,13 @@ function TopicItem({
                )}
             </div>
             <div className="opacity-100 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex space-x-2">
+              <Link
+                to={`/create?topicId=${topic.id}`}
+                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md"
+                title="ক্যুইজ তৈরি করুন"
+              >
+                <Plus size={14} />
+              </Link>
               <button 
                 onClick={() => setIsEditing(true)}
                 className="p-1.5 text-neutral-500 hover:text-black hover:bg-neutral-200 rounded-md"
@@ -307,7 +314,7 @@ function TopicItem({
           {topicQuizzes.map(quiz => (
             <div 
                key={`quiz-${quiz.id}`}
-               className="flex items-center space-x-3 p-3 bg-white rounded-lg border border-neutral-100 group"
+               className="flex items-center space-x-3 p-3 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-100 dark:border-neutral-800 group"
                style={{ marginLeft: `${(depth + 1) * 24}px` }}
             >
               <div className="w-6 shrink-0 flex items-center justify-center">

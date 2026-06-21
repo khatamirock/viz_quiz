@@ -77,15 +77,15 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
-          <div className="flex items-center space-x-3 mb-4 text-neutral-600">
+        <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm">
+          <div className="flex items-center space-x-3 mb-4 text-neutral-600 dark:text-neutral-400">
             <CheckCircle size={20} />
             <span className="font-medium">সম্পন্ন করা ক্যুইজ</span>
           </div>
           <span className="text-4xl font-semibold">{totalTaken}</span>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-neutral-200 shadow-sm">
-          <div className="flex items-center space-x-3 mb-4 text-neutral-600">
+        <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm">
+          <div className="flex items-center space-x-3 mb-4 text-neutral-600 dark:text-neutral-400">
             <Folder size={20} />
             <span className="font-medium">মোট বিষয়</span>
           </div>
@@ -101,10 +101,10 @@ export default function Dashboard() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
              {parentScores.map(ts => (
-               <div key={ts.id} className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm flex flex-col justify-between">
+               <div key={ts.id} className="bg-white dark:bg-neutral-900 p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm flex flex-col justify-between">
                   <div className="flex justify-between items-start mb-4">
                     <span className="font-medium text-lg leading-tight mr-4">{ts.name}</span>
-                    <span className="text-xs px-2 py-1 bg-neutral-100 rounded-lg text-neutral-600 whitespace-nowrap">
+                    <span className="text-xs px-2 py-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
                       {ts.attemptsCount} বার
                     </span>
                   </div>
@@ -120,9 +120,9 @@ export default function Dashboard() {
       <div>
         <h2 className="text-xl font-semibold tracking-tight mb-4">সাম্প্রতিক ক্যুইজগুলো</h2>
         {quizzes.length === 0 ? (
-          <div className="text-center p-12 bg-white rounded-2xl border border-neutral-200 border-dashed">
+          <div className="text-center p-12 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 border-dashed">
              <p className="text-neutral-500 mb-4">এখনও কোনো ক্যুইজ নেই।</p>
-             <Link to="/create" className="px-4 py-2 bg-black text-white rounded-lg font-medium hover:bg-neutral-800 transition">
+             <Link to="/create" className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition">
                প্রথম ক্যুইজ তৈরি করুন
              </Link>
           </div>
@@ -146,7 +146,7 @@ export default function Dashboard() {
 
 function QuizCard({ quiz, topics, onDelete }: { quiz: Quiz, topics: Topic[], onDelete: () => void }) {
   return (
-    <div className="bg-white p-5 rounded-2xl border border-neutral-200 shadow-sm flex flex-col group">
+    <div className="bg-white dark:bg-neutral-900 p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm flex flex-col group">
       <div className="flex justify-between items-start mb-1">
         <h3 className="font-medium text-lg">{quiz.title}</h3>
         <button 
@@ -161,7 +161,7 @@ function QuizCard({ quiz, topics, onDelete }: { quiz: Quiz, topics: Topic[], onD
         {quiz.questions.length}টি প্রশ্ন • বিষয়: {topics.find(t => t.id === quiz.topicId)?.name || 'অজানা'}
       </p>
       <div className="flex items-center space-x-4 mt-auto">
-        <Link to={`/quiz/${quiz.id}`} className="inline-flex items-center space-x-2 text-sm font-medium text-black hover:opacity-70 transition">
+        <Link to={`/quiz/${quiz.id}`} className="inline-flex items-center space-x-2 text-sm font-medium text-black dark:text-white hover:opacity-70 transition">
           <Play size={16} />
           <span>ক্যুইজ শুরু করুন</span>
         </Link>

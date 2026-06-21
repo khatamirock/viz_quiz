@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useData } from '../lib/hooks';
 import { Topic, Quiz } from '../types';
 import { UploadCloud, Loader2, Image as ImageIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function CreateQuiz() {
   const [topics] = useData<Topic[]>('/api/topics', []);
@@ -10,8 +10,12 @@ export default function CreateQuiz() {
   const [file, setFile] = useState<File | null>(null);
   const [textContent, setTextContent] = useState('');
   
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const initialTopicId = searchParams.get('topicId') || '';
+
   const [mode, setMode] = useState<'new' | 'append'>('new');
-  const [topicId, setTopicId] = useState<string>('');
+  const [topicId, setTopicId] = useState<string>(initialTopicId);
   const [title, setTitle] = useState('');
   const [selectedQuizId, setSelectedQuizId] = useState<string>('');
   
@@ -84,25 +88,25 @@ export default function CreateQuiz() {
          <p className="text-neutral-500">বইয়ের পাতার ছবি আপলোড করুন অথবা পড়ার বিষয়বস্তু পেস্ট করুন। আমাদের এআই স্বয়ংক্রিয়ভাবে সেখান থেকে ক্যুইজ তৈরি করবে।</p>
       </div>
 
-      <form onSubmit={handleGenerate} className="bg-white p-8 rounded-2xl border border-neutral-200 shadow-sm space-y-6">
+      <form onSubmit={handleGenerate} className="bg-white dark:bg-neutral-900 p-8 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-6">
          {error && (
             <div className="p-4 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
                {error}
             </div>
          )}
          
-         <div className="flex space-x-2 p-1 bg-neutral-100 rounded-lg">
+         <div className="flex space-x-2 p-1 bg-neutral-100 dark:bg-neutral-800 rounded-lg">
              <button
              type="button"
              onClick={() => setMode('new')}
-             className={`flex-1 py-2 text-sm font-medium rounded-md transition ${mode === 'new' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}
+             className={`flex-1 py-2 text-sm font-medium rounded-md transition ${mode === 'new' ? 'bg-white dark:bg-neutral-700 shadow-sm text-black dark:text-white' : 'text-neutral-500 hover:text-black dark:hover:text-white'}`}
            >
              নতুন ক্যুইজ তৈরি করুন
            </button>
            <button
              type="button"
              onClick={() => setMode('append')}
-             className={`flex-1 py-2 text-sm font-medium rounded-md transition ${mode === 'append' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}
+             className={`flex-1 py-2 text-sm font-medium rounded-md transition ${mode === 'append' ? 'bg-white dark:bg-neutral-700 shadow-sm text-black dark:text-white' : 'text-neutral-500 hover:text-black dark:hover:text-white'}`}
            >
              বিদ্যমান ক্যুইজে যুক্ত করুন
            </button>
@@ -114,7 +118,7 @@ export default function CreateQuiz() {
                 <label className="block text-sm font-medium text-neutral-700">ক্যুইজের শিরোনাম</label>
                 <input 
                   type="text" 
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 bg-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
                   placeholder="যেমন: ইতিহাস অধ্যায় ৪"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -125,7 +129,7 @@ export default function CreateQuiz() {
              <div className="space-y-1">
                 <label className="block text-sm font-medium text-neutral-700">বিষয়</label>
                 <select 
-                  className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 bg-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
                   value={topicId}
                   onChange={(e) => setTopicId(e.target.value)}
                   required={mode === 'new'}
@@ -144,7 +148,7 @@ export default function CreateQuiz() {
            <div className="space-y-1">
               <label className="block text-sm font-medium text-neutral-700">বিদ্যমান ক্যুইজ নির্বাচন করুন</label>
               <select 
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
+                className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 bg-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
                 value={selectedQuizId}
                 onChange={(e) => setSelectedQuizId(e.target.value)}
                 required={mode === 'append'}
@@ -166,7 +170,7 @@ export default function CreateQuiz() {
             <label className="block text-sm font-medium text-neutral-700">ছবি আপলোড করুন</label>
             <div 
               className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-                file ? 'border-green-500 bg-green-50' : 'border-neutral-300 hover:bg-neutral-50'
+                file ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-neutral-300 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800'
               }`}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -208,7 +212,7 @@ export default function CreateQuiz() {
          <div className="space-y-2">
             <label className="block text-sm font-medium text-neutral-700">টেক্সট পেস্ট করুন</label>
             <textarea
-              className="w-full px-4 py-3 border border-neutral-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5 min-h-[120px] resize-y"
+              className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-700 bg-transparent rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 min-h-[120px] resize-y"
               placeholder="আপনার পড়ার বিষয়বস্তু বা পরীক্ষার নোট এখানে পেস্ট করুন..."
               value={textContent}
               onChange={(e) => setTextContent(e.target.value)}
@@ -218,7 +222,7 @@ export default function CreateQuiz() {
          <button 
            type="submit" 
            disabled={loading}
-           className="w-full py-3 bg-black text-white rounded-xl font-medium flex justify-center items-center space-x-2 hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+           className="w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-medium flex justify-center items-center space-x-2 hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
          >
            {loading ? (
              <>

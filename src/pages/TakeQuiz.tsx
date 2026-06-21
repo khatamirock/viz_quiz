@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Quiz, QuizQuestion } from '../types';
 import { useData } from '../lib/hooks';
-import { CheckCircle2, XCircle, ArrowRight, Loader2, RefreshCcw } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, Loader2, RefreshCcw, Play } from 'lucide-react';
 
 export default function TakeQuiz() {
   const { quizId } = useParams();
   const navigate = useNavigate();
   const [quizzes, setQuizzes, loading, error] = useData<Quiz[]>('/api/quizzes', []);
   
+  const [isStarted, setIsStarted] = useState(false);
+  const [questionLimit, setQuestionLimit] = useState<number | 'all'>('all');
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [showResults, setShowResults] = useState(false);
@@ -35,7 +39,7 @@ export default function TakeQuiz() {
   };
 
   const handleNext = () => {
-    if (currentIndex < quiz.questions.length - 1) {
+    if (currentIndex < quizQuestions.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
       finishQuiz();
@@ -45,7 +49,7 @@ export default function TakeQuiz() {
   const finishQuiz = async () => {
     setSaving(true);
     let correctCount = 0;
-    quiz.questions.forEach((q, idx) => {
+    quizQuestions.forEach((q, idx) => {
        if (selectedAnswers[idx] === q.correctAnswerIndex) {
           correctCount++;
        }
@@ -58,7 +62,7 @@ export default function TakeQuiz() {
          body: JSON.stringify({
            quizId,
            score: correctCount,
-           totalQuestions: quiz.questions.length
+           totalQuestions: quizQuestions.length
          })
        });
     } catch(e) {
@@ -69,36 +73,80 @@ export default function TakeQuiz() {
     setSaving(false);
   };
 
-  const activeQuestion = quiz.questions[currentIndex];
+  if (!isStarted) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <button onClick={() => navigate('/')} className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white mb-4">← ড্যাশবোর্ড</button>
+        <div className="bg-white dark:bg-neutral-900 p-8 md:p-12 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm text-center">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-2">{quiz.title}</h1>
+            <p className="text-neutral-500 mb-8">মোট প্রশ্ন: {quiz.questions.length}টি</p>
+
+            <div className="max-w-xs mx-auto text-left space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">আপনি কয়টি প্রশ্নের উত্তর দিতে চান?</label>
+                  <select 
+                    value={questionLimit}
+                    onChange={(e) => setQuestionLimit(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                    className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
+                  >
+                    <option value="all">সবগুলো ({quiz.questions.length}টি)</option>
+                    {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].filter(n => n < quiz.questions.length).map(n => (
+                        <option key={n} value={n}>{n}টি প্রশ্ন</option>
+                    ))}
+                  </select>
+                </div>
+
+                <button 
+                  onClick={() => {
+                     let q = [...quiz.questions];
+                     if (questionLimit !== 'all') {
+                        q = q.sort(() => 0.5 - Math.random()).slice(0, questionLimit);
+                     }
+                     setQuizQuestions(q);
+                     setIsStarted(true);
+                  }}
+                  className="w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-medium flex justify-center items-center space-x-2 hover:bg-neutral-800 dark:hover:bg-neutral-200 transition"
+                >
+                  <Play size={18} fill="currentColor" />
+                  <span>ক্যুইজ শুরু করুন</span>
+                </button>
+            </div>
+        </div>
+      </div>
+    );
+  }
+
+  const activeQuestion = quizQuestions[currentIndex];
 
   if (showResults) {
     let score = 0;
-    quiz.questions.forEach((q, idx) => {
+    quizQuestions.forEach((q, idx) => {
        if (selectedAnswers[idx] === q.correctAnswerIndex) score++;
     });
     
     return (
       <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-white p-6 md:p-12 rounded-3xl border border-neutral-200 shadow-sm text-center">
+          <div className="bg-white dark:bg-neutral-900 p-6 md:p-12 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm text-center">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight mb-4">ক্যুইজ সম্পন্ন</h2>
-            <div className="text-5xl md:text-6xl font-bold mb-4">{Math.round((score / quiz.questions.length) * 100)}%</div>
-            <p className="text-neutral-500 mb-8">আপনি {quiz.questions.length} এর মধ্যে {score} পেয়েছেন</p>
+            <div className="text-5xl md:text-6xl font-bold mb-4">{Math.round((score / quizQuestions.length) * 100)}%</div>
+            <p className="text-neutral-500 mb-8">আপনি {quizQuestions.length} এর মধ্যে {score} পেয়েছেন</p>
             
             <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
               <button 
                 onClick={() => {
                   setShowResults(false);
+                  setIsStarted(false);
                   setCurrentIndex(0);
                   setSelectedAnswers({});
                 }} 
-                className="px-6 py-3 rounded-xl border border-neutral-200 font-medium flex items-center space-x-2 hover:bg-neutral-50"
+                className="px-6 py-3 rounded-xl border border-neutral-200 dark:border-neutral-800 font-medium flex items-center space-x-2 hover:bg-neutral-50 dark:hover:bg-neutral-800 justify-center"
               >
                 <RefreshCcw size={18} />
                 <span>আবার চেষ্টা করুন</span>
               </button>
               <button 
                 onClick={() => navigate('/')} 
-                className="px-6 py-3 bg-black text-white rounded-xl font-medium hover:bg-neutral-800"
+                className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 flex items-center justify-center"
               >
                 ড্যাশবোর্ড
               </button>
@@ -107,12 +155,12 @@ export default function TakeQuiz() {
          
          <div className="space-y-4">
            <h3 className="text-xl font-semibold">উত্তর পর্যালোচনা করুন</h3>
-           {quiz.questions.map((q, idx) => {
+           {quizQuestions.map((q, idx) => {
               const uAns = selectedAnswers[idx];
               const isCorrect = uAns === q.correctAnswerIndex;
               
               return (
-                 <div key={q.id} className={`p-6 rounded-2xl border ${isCorrect ? 'bg-green-50/50 border-green-100' : 'bg-red-50/50 border-red-100'}`}>
+                 <div key={q.id} className={`p-6 rounded-2xl border ${isCorrect ? 'bg-green-50/50 dark:bg-green-900/20 border-green-100 dark:border-green-900/50' : 'bg-red-50/50 dark:bg-red-900/20 border-red-100 dark:border-red-900/50'}`}>
                     <div className="font-medium mb-3">{idx + 1}. {q.question}</div>
                     <div className="space-y-2">
                       {q.options.map((opt, oIdx) => {
@@ -120,10 +168,10 @@ export default function TakeQuiz() {
                         let icon = null;
                         
                         if (oIdx === q.correctAnswerIndex) {
-                           style = "text-green-700 font-medium";
+                           style = "text-green-700 dark:text-green-400 font-medium";
                            icon = <CheckCircle2 size={16} className="text-green-500 mr-2 inline" />;
                         } else if (oIdx === uAns && !isCorrect) {
-                           style = "text-red-600 line-through";
+                           style = "text-red-600 dark:text-red-400 line-through";
                            icon = <XCircle size={16} className="text-red-500 mr-2 inline" />;
                         }
                         
@@ -148,17 +196,17 @@ export default function TakeQuiz() {
       <div>
          <button onClick={() => navigate('/')} className="text-sm text-neutral-500 hover:text-black mb-4">← ড্যাশবোর্ড</button>
          <h1 className="text-2xl font-semibold tracking-tight">{quiz.title}</h1>
-         <p className="text-sm text-neutral-500 mt-1">প্রশ্ন {currentIndex + 1} / {quiz.questions.length}</p>
+         <p className="text-sm text-neutral-500 mt-1">প্রশ্ন {currentIndex + 1} / {quizQuestions.length}</p>
          
-         <div className="w-full bg-neutral-200 h-1.5 rounded-full mt-4 overflow-hidden">
+         <div className="w-full bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-full mt-4 overflow-hidden">
             <div 
-              className="bg-black h-full transition-all duration-300 ease-out" 
-              style={{ width: `${((currentIndex + 1) / quiz.questions.length) * 100}%` }}
+              className="bg-black dark:bg-white h-full transition-all duration-300 ease-out" 
+              style={{ width: `${((currentIndex + 1) / quizQuestions.length) * 100}%` }}
             />
          </div>
       </div>
 
-      <div className="bg-white p-8 rounded-3xl border border-neutral-200 shadow-sm mt-8">
+      <div className="bg-white dark:bg-neutral-900 p-8 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm mt-8">
          <h2 className="text-xl font-medium tracking-tight mb-8 leading-relaxed">
             {activeQuestion.question}
          </h2>
@@ -172,8 +220,8 @@ export default function TakeQuiz() {
                     onClick={() => handleSelect(idx)}
                     className={`w-full text-left px-5 py-4 rounded-xl border transition-all ${
                       isSelected 
-                        ? 'border-black bg-neutral-900 text-white shadow-md' 
-                        : 'border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50'
+                        ? 'border-black dark:border-neutral-500 bg-neutral-900 dark:bg-neutral-800 text-white shadow-md' 
+                        : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
                     }`}
                   >
                      <div className="flex items-center space-x-3">
@@ -189,11 +237,11 @@ export default function TakeQuiz() {
             })}
          </div>
 
-         <div className="mt-8 pt-6 border-t border-neutral-100 flex justify-end">
+         <div className="mt-8 pt-6 border-t border-neutral-100 dark:border-neutral-800 flex justify-end">
             <button 
               onClick={handleNext}
               disabled={selectedAnswers[currentIndex] === undefined || saving}
-              className="px-6 py-3 bg-black text-white rounded-xl font-medium flex items-center space-x-2 hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-medium flex items-center space-x-2 hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
               {saving ? (
                 <>
@@ -203,9 +251,9 @@ export default function TakeQuiz() {
               ) : (
                 <>
                   <span>
-                     {currentIndex === quiz.questions.length - 1 ? 'ক্যুইজ শেষ করুন' : 'পরবর্তী প্রশ্ন'}
+                     {currentIndex === quizQuestions.length - 1 ? 'ক্যুইজ শেষ করুন' : 'পরবর্তী প্রশ্ন'}
                   </span>
-                  {currentIndex !== quiz.questions.length - 1 && <ArrowRight size={18} />}
+                  {currentIndex !== quizQuestions.length - 1 && <ArrowRight size={18} />}
                 </>
               )}
             </button>
