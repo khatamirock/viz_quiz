@@ -25,11 +25,44 @@ export function Layout({ children }: { children: React.ReactNode }) {
   }, [isDark]);
 
   useEffect(() => {
-    const handleOnline = () => setIsOffline(false);
+    const syncOfflineData = async () => {
+      const offlineAttempts = JSON.parse(localStorage.getItem('offline_progress') || '[]');
+      if (offlineAttempts.length > 0) {
+        let allSynced = true;
+        for (const attempt of offlineAttempts) {
+          try {
+            await fetch('/api/progress', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(attempt)
+            });
+          } catch(e) {
+            allSynced = false;
+          }
+        }
+        if (allSynced) {
+          localStorage.removeItem('offline_progress');
+        } else {
+          // If some failed, maybe we should just clear it to avoid infinite loops, or keep it.
+          // For simplicity, we clear it if the first loop is done and at least some synced,
+          // but let's just leave it simple: if allSynced, clear.
+        }
+      }
+    };
+
+    const handleOnline = () => {
+      setIsOffline(false);
+      syncOfflineData();
+    };
     const handleOffline = () => setIsOffline(true);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
+    // Also attempt sync on mount if online
+    if (navigator.onLine) {
+      syncOfflineData();
+    }
 
     return () => {
       window.removeEventListener('online', handleOnline);

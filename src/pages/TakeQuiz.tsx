@@ -56,7 +56,7 @@ export default function TakeQuiz() {
     });
 
     try {
-       await fetch('/api/progress', {
+       const res = await fetch('/api/progress', {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({
@@ -65,8 +65,28 @@ export default function TakeQuiz() {
            totalQuestions: quizQuestions.length
          })
        });
+       if (!res.ok) throw new Error('Offline');
     } catch(e) {
-       console.error("Failed to save progress", e);
+       console.log("Offline mode: saving progress locally", e);
+       const offlineAttempts = JSON.parse(localStorage.getItem('offline_progress') || '[]');
+       offlineAttempts.push({
+           quizId,
+           score: correctCount,
+           totalQuestions: quizQuestions.length,
+           date: Date.now()
+       });
+       localStorage.setItem('offline_progress', JSON.stringify(offlineAttempts));
+       
+       // Update cached progress for immediate UI update
+       const cachedProgress = JSON.parse(localStorage.getItem('cache_/api/progress') || '[]');
+       cachedProgress.push({
+           id: Date.now().toString(),
+           quizId,
+           score: correctCount,
+           totalQuestions: quizQuestions.length,
+           date: Date.now()
+       });
+       localStorage.setItem('cache_/api/progress', JSON.stringify(cachedProgress));
     }
 
     setShowResults(true);
