@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { DownloadCloud, CheckCircle2, Loader2 } from 'lucide-react';
+import { DownloadCloud, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
 
 export default function Settings() {
   const [apiKey, setApiKey] = useState('');
   const [isSaved, setIsSaved] = useState(false);
   const [isDownloadingOffline, setIsDownloadingOffline] = useState(false);
   const [offlineStatus, setOfflineStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [isDeletingOffline, setIsDeletingOffline] = useState(false);
 
   useEffect(() => {
     const savedKey = localStorage.getItem('gemini_api_key') || '';
@@ -56,6 +57,25 @@ export default function Settings() {
     }
   };
 
+  const handleDeleteOfflineData = () => {
+    setIsDeletingOffline(true);
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('cache_') || key === 'offline_progress')) {
+          localStorage.removeItem(key);
+          // decrement i because localStorage array shifts
+          i--;
+        }
+      }
+    } catch(e) {
+      console.error("Failed to delete offline data", e);
+    }
+    setTimeout(() => {
+      setIsDeletingOffline(false);
+    }, 500);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
       <div>
@@ -98,15 +118,15 @@ export default function Settings() {
              </div>
              <div>
                 <label className="block text-lg font-medium text-neutral-900 dark:text-neutral-100">অফলাইন ক্যুইজ এক্সেস</label>
-                <p className="text-sm text-neutral-500 mt-1">সব ক্যুইজ এবং বিষয় ডাউনলোড করে রাখুন। অফলাইনে ইন্টারনেট ছাড়া ক্যুইজ অনুশীলন করুন।</p>
+                <p className="text-sm text-neutral-500 mt-1">সব ক্যুইজ এবং বিষয় ডাউনলোড করে রাখুন। অফলাইনে ইন্টারনেট ছাড়া ক্যুইজ অনুশীলন করুন। লোকাল ডেটা মুছে ফেলতে পারেন।</p>
              </div>
           </div>
           
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleDownloadOfflineData}
               disabled={isDownloadingOffline}
-              className="flex items-center space-x-2 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-900 dark:text-neutral-100 rounded-xl font-medium transition disabled:opacity-50"
+              className="flex items-center justify-center space-x-2 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-900 dark:text-neutral-100 rounded-xl font-medium transition disabled:opacity-50"
             >
               {isDownloadingOffline ? (
                 <>
@@ -125,10 +145,27 @@ export default function Settings() {
                 </>
               )}
             </button>
-            {offlineStatus === 'error' && (
-              <p className="text-red-500 text-sm mt-3">ডাউনলোডে সমস্যা হয়েছে, আবার চেষ্টা করুন।</p>
-            )}
+            <button
+              onClick={handleDeleteOfflineData}
+              disabled={isDeletingOffline}
+              className="flex items-center justify-center space-x-2 px-6 py-3 bg-red-50 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl font-medium transition disabled:opacity-50"
+            >
+              {isDeletingOffline ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  <span>মুছে ফেলা হচ্ছে...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 size={18} />
+                  <span>অফলাইন ডেটা মুছুন</span>
+                </>
+              )}
+            </button>
           </div>
+          {offlineStatus === 'error' && (
+            <p className="text-red-500 text-sm mt-3">ডাউনলোডে সমস্যা হয়েছে, আবার চেষ্টা করুন।</p>
+          )}
         </div>
       </div>
     </div>
