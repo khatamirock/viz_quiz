@@ -9,7 +9,6 @@ export default function Topics() {
   const [topics, setTopics] = useData<Topic[]>('/api/topics', []);
   const [quizzes, setQuizzes] = useData<Quiz[]>('/api/quizzes', []); // To check if topic has quizzes
   const [newTopicName, setNewTopicName] = useState('');
-  const [selectedParentId, setSelectedParentId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
   const [topicToDelete, setTopicToDelete] = useState<string | null>(null);
@@ -26,8 +25,7 @@ export default function Topics() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: newTopicName,
-          parentId: selectedParentId || undefined
+          name: newTopicName
         })
       });
       
@@ -39,7 +37,6 @@ export default function Topics() {
       const created = await res.json();
       setTopics([...topics, created]);
       setNewTopicName('');
-      setSelectedParentId('');
     } catch (err: any) {
       setError(err.message);
     }
@@ -133,31 +130,19 @@ export default function Topics() {
         )}
         <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-3 sm:items-end mb-8">
            <div className="flex-1 space-y-1 w-full sm:w-auto">
-             <label className="text-sm font-medium text-neutral-700">বিষয়ের নাম</label>
+             <label className="text-sm font-medium text-neutral-700">নতুন বিষয়ের নাম</label>
              <input 
                type="text" 
                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5" 
-               placeholder="যেমন: পদার্থবিজ্ঞান, অধ্যায় ১, গতিবিদ্যা..."
+               placeholder="যেমন: শীর্ষ স্তরের বিষয়..."
                value={newTopicName}
                onChange={e => setNewTopicName(e.target.value)}
              />
            </div>
-           <div className="flex-1 space-y-1 w-full sm:w-auto">
-             <label className="text-sm font-medium text-neutral-700">পেরেন্ট বিষয় (ঐচ্ছিক)</label>
-             <select 
-               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5"
-               value={selectedParentId}
-               onChange={e => setSelectedParentId(e.target.value)}
-             >
-                <option value="">কোনোটি না (শীর্ষ স্তর)</option>
-                {topics.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-             </select>
-           </div>
-           <button type="submit" className="w-full sm:w-auto justify-center px-4 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg flex items-center space-x-2 font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition">
+           
+           <button type="submit" className="w-full sm:w-auto justify-center px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-lg flex items-center space-x-2 font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 transition">
              <Plus size={18} />
-             <span>বিষয় যুক্ত করুন</span>
+             <span>নতুন বিষয় যুক্ত করুন</span>
            </button>
         </form>
 
