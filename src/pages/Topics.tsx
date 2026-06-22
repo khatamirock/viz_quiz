@@ -261,6 +261,19 @@ function TopicItem({
   const topicQuizzes = quizzes.filter(q => q.topicId === topic.id);
   const hasContent = children.length > 0 || topicQuizzes.length > 0;
 
+  const getTotalStats = (tid: string): { quizzes: number, questions: number } => {
+    let countQuizzes = quizzes.filter(q => q.topicId === tid).length;
+    let countQuestions = quizzes.filter(q => q.topicId === tid).reduce((acc, q) => acc + (q.questions?.length || 0), 0);
+    const childs = getChildren(tid);
+    for (const c of childs) {
+      const stats = getTotalStats(c.id);
+      countQuizzes += stats.quizzes;
+      countQuestions += stats.questions;
+    }
+    return { quizzes: countQuizzes, questions: countQuestions };
+  };
+  const stats = getTotalStats(topic.id);
+
   return (
     <div className="space-y-2">
       <div 
@@ -300,9 +313,9 @@ function TopicItem({
           <>
             <div className="flex-1 flex items-center space-x-2">
                <span className="font-medium cursor-pointer" onClick={() => hasContent && setIsExpanded(!isExpanded)}>{topic.name}</span>
-               {topicQuizzes.length > 0 && (
+               {stats.quizzes > 0 && (
                  <span className="text-xs px-2 py-0.5 bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-full">
-                   {topicQuizzes.length} ক্যুইজ
+                   {stats.quizzes} ক্যুইজ • {stats.questions} প্রশ্ন
                  </span>
                )}
             </div>
