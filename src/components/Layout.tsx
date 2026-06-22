@@ -26,6 +26,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { name: 'ড্যাশবোর্ড', path: '/', icon: LayoutDashboard },
     { name: 'বিষয়সমূহ', path: '/topics', icon: FolderOpen },
     { name: 'ক্যুইজ তৈরি', path: '/create', icon: Upload },
+    { name: 'ইতিহাস', path: '/history', icon: CheckCircle },
     { name: 'সেটিংস', path: '/settings', icon: SettingsIcon },
   ];
 
