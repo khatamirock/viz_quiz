@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../lib/hooks';
 import { Topic, Quiz } from '../types';
-import { Folder, Plus, Trash2, Edit2, Check, X, Play, ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { Folder, Plus, Trash2, Edit2, Check, X, Play, ChevronDown, ChevronRight, FileText, MoreHorizontal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PasskeyModal from '../components/PasskeyModal';
 
@@ -175,6 +175,24 @@ export default function Topics() {
                 onDelete={(id) => setTopicToDelete(id)}
                 onUpdate={(id, name) => setTopicToUpdate({id, name})}
                 onDeleteQuiz={(id) => setQuizToDelete(id)}
+                onCreateSubtopic={async (parentId, name) => {
+                  try {
+                    const res = await fetch('/api/topics', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ name, parentId })
+                    });
+                    if (res.ok) {
+                      const fetchRes = await fetch('/api/topics');
+                      if (fetchRes.ok) {
+                        const freshTopics = await fetchRes.json();
+                        setTopics(freshTopics);
+                      }
+                    }
+                  } catch (err) {
+                    console.error(err);
+                  }
+                }}
               />
             ))}
           </div>
@@ -210,7 +228,8 @@ function TopicItem({
   depth,
   onDelete,
   onUpdate,
-  onDeleteQuiz
+  onDeleteQuiz,
+  onCreateSubtopic
 }: { 
   topic: Topic,
   quizzes: Quiz[],
@@ -218,12 +237,32 @@ function TopicItem({
   depth: number,
   onDelete: (id: string) => void,
   onUpdate: (id: string, name: string) => void,
-  onDeleteQuiz: (id: string) => void
+  onDeleteQuiz: (id: string) => void,
+  onCreateSubtopic: (parentId: string, name: string) => void
 }) {
   const children = getChildren(topic.id);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(topic.name);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAddingSubtopic, setIsAddingSubtopic] = useState(false);
+  const [newSubtopicName, setNewSubtopicName] = useState('');
+  
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
   
   const handleSave = () => {
     if (editName.trim() && editName !== topic.name) {
@@ -277,33 +316,72 @@ function TopicItem({
             <div className="flex-1 flex items-center space-x-2">
                <span className="font-medium cursor-pointer" onClick={() => hasContent && setIsExpanded(!isExpanded)}>{topic.name}</span>
                {topicQuizzes.length > 0 && (
-                 <span className="text-xs px-2 py-0.5 bg-neutral-200 text-neutral-600 rounded-full">
+                 <span className="text-xs px-2 py-0.5 bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 rounded-full">
                    {topicQuizzes.length} ক্যুইজ
                  </span>
                )}
             </div>
-            <div className="opacity-100 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex space-x-2">
-              <Link
-                to={`/create?topicId=${topic.id}`}
-                className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-md"
-                title="ক্যুইজ তৈরি করুন"
+            
+            <div className={`relative ${isMenuOpen ? 'opacity-100' : 'opacity-100 sm:opacity-0 group-hover:opacity-100 focus-within:opacity-100'} transition-opacity flex items-center`} ref={menuRef}>
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className={`p-1.5 rounded-md transition ${isMenuOpen ? 'bg-neutral-200 dark:bg-neutral-700 text-black dark:text-white' : 'text-neutral-500 hover:text-black hover:bg-neutral-200 dark:hover:text-white dark:hover:bg-neutral-700'}`}
               >
-                <Plus size={14} />
-              </Link>
-              <button 
-                onClick={() => setIsEditing(true)}
-                className="p-1.5 text-neutral-500 hover:text-black hover:bg-neutral-200 rounded-md"
-                title="নাম পরিবর্তন করুন"
-              >
-                <Edit2 size={14} />
+                <MoreHorizontal size={16} />
               </button>
-              <button 
-                onClick={() => onDelete(topic.id)}
-                className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md"
-                title="বিষয় মুছুন"
-              >
-                <Trash2 size={14} />
-              </button>
+
+              {isMenuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-neutral-100 dark:border-neutral-700 py-1 z-10 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-1.5 text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-neutral-700 mb-1">
+                    অ্যাকশন
+                  </div>
+                  
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsAddingSubtopic(true);
+                      setIsExpanded(true); // make sure subtopics are visibly expanded
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center space-x-2"
+                  >
+                    <Plus size={14} />
+                    <span>সাবটপিক যুক্ত করুন</span>
+                  </button>
+                  
+                  <Link
+                    to={`/create?topicId=${topic.id}`}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="w-full text-left px-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-center space-x-2"
+                  >
+                    <FileText size={14} />
+                    <span>ক্যুইজ তৈরি করুন</span>
+                  </Link>
+
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsEditing(true);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700 flex items-center space-x-2"
+                  >
+                    <Edit2 size={14} />
+                    <span>নাম পরিবর্তন করুন</span>
+                  </button>
+
+                  <div className="my-1 border-t border-neutral-100 dark:border-neutral-700"></div>
+
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onDelete(topic.id);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center space-x-2"
+                  >
+                    <Trash2 size={14} />
+                    <span>মুছুন</span>
+                  </button>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -311,6 +389,56 @@ function TopicItem({
       
       {isExpanded && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-200 space-y-2">
+          {isAddingSubtopic && (
+            <div 
+              className="flex items-center space-x-3 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30"
+              style={{ marginLeft: `${(depth + 1) * 24}px` }}
+            >
+              <div className="w-6 shrink-0 flex justify-center"><Folder size={18} className="text-blue-300 dark:text-blue-700" /></div>
+              <input
+                type="text"
+                autoFocus
+                placeholder="সাবটপিকের নাম..."
+                className="flex-1 px-2 py-1 text-sm border border-blue-200 dark:border-blue-800 bg-white dark:bg-neutral-900 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                value={newSubtopicName}
+                onChange={e => setNewSubtopicName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    if (newSubtopicName.trim()) {
+                      onCreateSubtopic(topic.id, newSubtopicName.trim());
+                      setNewSubtopicName('');
+                      setIsAddingSubtopic(false);
+                    }
+                  }
+                  if (e.key === 'Escape') {
+                    setIsAddingSubtopic(false);
+                    setNewSubtopicName('');
+                  }
+                }}
+              />
+              <button 
+                onClick={() => {
+                  if (newSubtopicName.trim()) {
+                    onCreateSubtopic(topic.id, newSubtopicName.trim());
+                    setNewSubtopicName('');
+                    setIsAddingSubtopic(false);
+                  }
+                }}
+                className="p-1 px-2 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm"
+              >
+                যুক্ত করুন
+              </button>
+              <button 
+                onClick={() => {
+                  setIsAddingSubtopic(false);
+                  setNewSubtopicName('');
+                }}
+                className="p-1 text-neutral-500 hover:text-black dark:hover:text-white rounded"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
           {topicQuizzes.map(quiz => (
             <div 
                key={`quiz-${quiz.id}`}
@@ -361,6 +489,7 @@ function TopicItem({
               onDelete={onDelete}
               onUpdate={onUpdate}
               onDeleteQuiz={onDeleteQuiz}
+              onCreateSubtopic={onCreateSubtopic}
             />
           ))}
         </div>
