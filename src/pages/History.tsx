@@ -145,7 +145,9 @@ export default function History() {
             <div className="px-6 py-5 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50">
                <h3 className="font-medium text-lg tracking-tight">সব অংশগ্রহণ</h3>
             </div>
-            <div className="overflow-x-auto">
+            
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-neutral-100 dark:border-neutral-800 text-sm text-neutral-500 dark:text-neutral-400 bg-neutral-50/30 dark:bg-neutral-900/30">
@@ -194,6 +196,46 @@ export default function History() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile List View */}
+            <div className="block md:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+              {sortedAttempts.map((attempt) => {
+                const quiz = quizzes.find(q => q.id === attempt.quizId);
+                const quizName = quiz ? quiz.title : 'অজানা ক্যুইজ';
+                const date = new Date(attempt.date).toLocaleString('bn-BD', {
+                  year: 'numeric', month: 'short', day: 'numeric',
+                  hour: '2-digit', minute: '2-digit'
+                });
+                const percentage = Math.round((attempt.score / attempt.totalQuestions) * 100);
+                
+                let percentageColor = "text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-900/50";
+                if (percentage >= 80) percentageColor = "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/50";
+                if (percentage < 50) percentageColor = "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50";
+
+                return (
+                  <div key={attempt.id} className="p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="font-medium">{quizName}</div>
+                        {!quiz && <div className="text-xs text-neutral-400 mt-1">মুছে ফেলা হয়েছে</div>}
+                      </div>
+                      <div className={`inline-flex items-center px-2 py-0.5 rounded border text-xs font-bold ${percentageColor}`}>
+                        {percentage}%
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-neutral-500 dark:text-neutral-400">
+                      <div className="flex items-center space-x-1.5">
+                        <Calendar size={12} />
+                        <span>{date}</span>
+                      </div>
+                      <div className="font-medium text-neutral-700 dark:text-neutral-300">
+                        {attempt.score} / {attempt.totalQuestions}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </>
