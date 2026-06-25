@@ -41,29 +41,43 @@ const AttemptSchema = new mongoose.Schema({
 });
 const AttemptModel = mongoose.model('Attempt', AttemptSchema);
 
+import { kv } from '@vercel/kv';
+
 let isConnected = false;
-async function connectDB() {
+let connectionPromise: Promise<boolean> | null = null;
+
+async function connectDB(): Promise<boolean> {
   if (isConnected && mongoose.connection.readyState === 1) return true;
   
   if (!process.env.MONGODB_URI) {
-    if (process.env.VERCEL) {
-      throw new Error("MONGODB_URI environment variable is not set. Please configure it in your Vercel project settings.");
-    }
-    return false; // Fallback to local files for local dev
+    return false; // Fallback to Vercel KV or local files
   }
   
-  if (mongoose.connection.readyState !== 1) {
+  if (mongoose.connection.readyState === 1) {
+    isConnected = true;
+    return true;
+  }
+
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
+  connectionPromise = (async () => {
     try {
-      await mongoose.connect(process.env.MONGODB_URI, {
+      await mongoose.connect(process.env.MONGODB_URI as string, {
         serverSelectionTimeoutMS: 5000 // Error out quickly in serverless environments
       });
       isConnected = true;
+      return true;
     } catch (error) {
       console.error("MongoDB connection error:", error);
-      throw new Error(`MongoDB Connection Error: ${(error as Error).message}. If you are using MongoDB Atlas, ensure your Network Access IP Whitelist includes '0.0.0.0/0' to allow Vercel to connect.`);
+      return false; // Fallback if MongoDB fails
+    } finally {
+      connectionPromise = null;
     }
-  }
-  return true;
+  })();
+
+  return connectionPromise;
 }
 
 // --- Local File Fallback (For Development/Preview) ---
@@ -71,6 +85,15 @@ const KV_FILE = process.env.VERCEL ? '/tmp/kv_store.json' : 'kv_store.json';
 type KVStore = Record<string, any>;
 
 async function getKV(): Promise<KVStore> {
+  if (process.env.VERCEL && process.env.KV_REST_API_URL) {
+    try {
+      const data = await kv.get<KVStore>('app_data');
+      return data || {};
+    } catch (e) {
+      console.error("Vercel KV Error:", e);
+      return {};
+    }
+  }
   try {
     const data = await fs.readFile(KV_FILE, 'utf-8');
     return JSON.parse(data);
@@ -81,6 +104,14 @@ async function getKV(): Promise<KVStore> {
 }
 
 async function setKV(data: KVStore): Promise<void> {
+  if (process.env.VERCEL && process.env.KV_REST_API_URL) {
+    try {
+      await kv.set('app_data', data);
+      return;
+    } catch (e) {
+      console.error("Vercel KV Error:", e);
+    }
+  }
   await fs.writeFile(KV_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
 
@@ -384,19 +415,25 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       let formattedQuestions: QuizQuestion[] = [];
       let isTsvFormat = false;
 
-      // TSV parsing logic
+      // Parsing logic
       if (!file && textContent) {
-        const lines = textContent.trim().split('\n').filter(line => line.trim() !== '');
+        const lines = textContent.trim().split('\n').map(l => l.trim()).filter(l => l !== '');
+        
         if (lines.length > 0) {
-          // Check for 6 columns (question + 4 options + ans)
-          const is6ColTsv = lines.every(line => line.split('\t').length >= 6);
-          // Check for 2 columns (question + ans)
-          const is2ColTsv = lines.every(line => line.split('\t').length >= 2);
+          // Helper to split a line by tab, or if no tab, by 2+ spaces
+          const splitLine = (line: string) => {
+            if (line.includes('\t')) return line.split('\t').map(s => s.trim());
+            return line.split(/\s{2,}/).map(s => s.trim());
+          };
+
+          const parsedLines = lines.map(splitLine);
           
-          if (is6ColTsv) {
+          const valid6Col = parsedLines.filter(parts => parts.length >= 6);
+          const valid2Col = parsedLines.filter(parts => parts.length >= 2);
+
+          if (valid6Col.length >= lines.length * 0.5 && valid6Col.length > 0) {
             isTsvFormat = true;
-            formattedQuestions = lines.map(line => {
-              const parts = line.split('\t').map(s => s.trim());
+            formattedQuestions = valid6Col.map(parts => {
               const question = parts[0];
               const options = [parts[1], parts[2], parts[3], parts[4]];
               const ans = parts[5];
@@ -406,27 +443,19 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
                 correctAnswerIndex = 0;
               }
               
-              return {
-                id: uuidv4(),
-                question,
-                options,
-                correctAnswerIndex
-              };
+              return { id: uuidv4(), question, options, correctAnswerIndex };
             });
-          } else if (is2ColTsv && !is6ColTsv) {
+          } else if (valid2Col.length >= lines.length * 0.5 && valid2Col.length > 0) {
             isTsvFormat = true;
-            const allAnswers = lines.map(line => line.split('\t')[1].trim());
+            const allAnswers = valid2Col.map(parts => parts[1]).filter(a => !!a);
             
-            formattedQuestions = lines.map((line, index) => {
-              const parts = line.split('\t').map(s => s.trim());
+            formattedQuestions = valid2Col.map((parts, index) => {
               const question = parts[0];
               const correctAnswer = parts[1] || 'True';
               
-              // Pick 3 random distinct distractors from other answers
               let distractors = allAnswers.filter((ans, i) => i !== index && ans !== correctAnswer);
               distractors = distractors.sort(() => 0.5 - Math.random()).slice(0, 3);
               
-              // If not enough distractors, add some generic ones
               while (distractors.length < 3) {
                 distractors.push(`Distractor ${distractors.length + 1}`);
               }
@@ -434,12 +463,7 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
               const options = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
               const correctAnswerIndex = options.indexOf(correctAnswer);
               
-              return {
-                id: uuidv4(),
-                question,
-                options,
-                correctAnswerIndex
-              };
+              return { id: uuidv4(), question, options, correctAnswerIndex };
             });
           }
         }
