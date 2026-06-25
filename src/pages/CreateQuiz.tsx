@@ -85,7 +85,7 @@ export default function CreateQuiz() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl mx-auto">
       <div>
          <h1 className="text-3xl font-semibold tracking-tight mb-2">প্রশ্ন বের করুন</h1>
-         <p className="text-neutral-500">বইয়ের পাতার ছবি আপলোড করুন অথবা পড়ার বিষয়বস্তু পেস্ট করুন। আমাদের এআই স্বয়ংক্রিয়ভাবে সেখান থেকে ক্যুইজ তৈরি করবে।</p>
+         <p className="text-neutral-500">বইয়ের পাতার ছবি আপলোড করুন অথবা পড়ার বিষয়বস্তু পেস্ট করুন। আমাদের এআই স্বয়ংক্রিয়ভাবে সেখান থেকে ক্যুইজ তৈরি করবে। (TSV ফরম্যাটে টেক্সট দিলে সাথে সাথেই ক্যুইজ তৈরি হবে)</p>
       </div>
 
       <form onSubmit={handleGenerate} className="bg-white dark:bg-neutral-900 p-8 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm space-y-6">

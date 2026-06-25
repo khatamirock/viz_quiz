@@ -381,8 +381,42 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
         return;
       }
 
-      const customApiKey = req.body.customApiKey;
-      const client = getGeminiClient(customApiKey);
+      let formattedQuestions: QuizQuestion[] = [];
+      let isTsvFormat = false;
+
+      // TSV parsing logic: question op1 op2 op3 op4 ans
+      if (!file && textContent) {
+        const lines = textContent.trim().split('\n').filter(line => line.trim() !== '');
+        if (lines.length > 0) {
+          isTsvFormat = lines.every(line => line.split('\t').length >= 6);
+        }
+        
+        if (isTsvFormat) {
+          formattedQuestions = lines.map(line => {
+            const parts = line.split('\t').map(s => s.trim());
+            const question = parts[0];
+            const options = [parts[1], parts[2], parts[3], parts[4]];
+            const ans = parts[5];
+            
+            // Find correct answer index
+            let correctAnswerIndex = options.findIndex(o => o.toLowerCase() === ans.toLowerCase());
+            if (correctAnswerIndex === -1) {
+              correctAnswerIndex = 0; // fallback if answer doesn't exactly match
+            }
+            
+            return {
+              id: uuidv4(),
+              question,
+              options,
+              correctAnswerIndex
+            };
+          });
+        }
+      }
+
+      if (!isTsvFormat) {
+        const customApiKey = req.body.customApiKey;
+        const client = getGeminiClient(customApiKey);
       
       const prompt = `You are an AI assistant designed to extract multiple choice questions from educational material.
 Please extract all readable questions from the provided input (image or text) and format them as multiple-choice questions.
@@ -461,12 +495,13 @@ No other text, markdown, or explanations outside the JSON array.`;
          return;
       }
 
-      const formattedQuestions: QuizQuestion[] = extractedQuestions.map((q: any) => ({
-        id: uuidv4(),
-        question: q.question || "Unknown Question",
-        options: Array.isArray(q.options) ? q.options : ["A", "B", "C", "D"],
-        correctAnswerIndex: typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0
-      }));
+        formattedQuestions = extractedQuestions.map((q: any) => ({
+          id: uuidv4(),
+          question: q.question || "Unknown Question",
+          options: Array.isArray(q.options) ? q.options : ["A", "B", "C", "D"],
+          correctAnswerIndex: typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0
+        }));
+      }
 
       if (quizId) {
         // Append to existing quiz
