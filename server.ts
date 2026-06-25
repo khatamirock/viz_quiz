@@ -384,64 +384,42 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       let formattedQuestions: QuizQuestion[] = [];
       let isTsvFormat = false;
 
-      // TSV parsing logic
+      // TSV parsing logic: question op1 op2 op3 op4 ans
       if (!file && textContent) {
         const lines = textContent.trim().split('\n').filter(line => line.trim() !== '');
         if (lines.length > 0) {
-          // Check for 6 columns (question + 4 options + ans)
-          const is6ColTsv = lines.every(line => line.split('\t').length >= 6);
-          // Check for 2 columns (question + ans)
-          const is2ColTsv = lines.every(line => line.split('\t').length >= 2);
-          
-          if (is6ColTsv) {
+          const tsvLines = lines.filter(line => line.split('\t').length >= 6);
+          if (tsvLines.length > 0) {
             isTsvFormat = true;
-            formattedQuestions = lines.map(line => {
-              const parts = line.split('\t').map(s => s.trim());
-              const question = parts[0];
-              const options = [parts[1], parts[2], parts[3], parts[4]];
-              const ans = parts[5];
-              
-              let correctAnswerIndex = options.findIndex(o => o.toLowerCase() === ans.toLowerCase());
-              if (correctAnswerIndex === -1) {
-                correctAnswerIndex = 0;
-              }
-              
-              return {
-                id: uuidv4(),
-                question,
-                options,
-                correctAnswerIndex
-              };
-            });
-          } else if (is2ColTsv && !is6ColTsv) {
-            isTsvFormat = true;
-            const allAnswers = lines.map(line => line.split('\t')[1].trim());
-            
-            formattedQuestions = lines.map((line, index) => {
-              const parts = line.split('\t').map(s => s.trim());
-              const question = parts[0];
-              const correctAnswer = parts[1] || 'True';
-              
-              // Pick 3 random distinct distractors from other answers
-              let distractors = allAnswers.filter((ans, i) => i !== index && ans !== correctAnswer);
-              distractors = distractors.sort(() => 0.5 - Math.random()).slice(0, 3);
-              
-              // If not enough distractors, add some generic ones
-              while (distractors.length < 3) {
-                distractors.push(`Distractor ${distractors.length + 1}`);
-              }
-              
-              const options = [correctAnswer, ...distractors].sort(() => 0.5 - Math.random());
-              const correctAnswerIndex = options.indexOf(correctAnswer);
-              
-              return {
-                id: uuidv4(),
-                question,
-                options,
-                correctAnswerIndex
-              };
-            });
           }
+        }
+        
+        if (isTsvFormat) {
+          const tsvLines = lines.filter(line => line.split('\t').length >= 6);
+          formattedQuestions = tsvLines.map(line => {
+            const parts = line.split('\t').map(s => s.trim());
+            const question = parts[0];
+            const options = [parts[1], parts[2], parts[3], parts[4]];
+            const ans = parts[5];
+            
+            // Find correct answer index
+            let correctAnswerIndex = options.findIndex(o => o.toLowerCase() === ans.toLowerCase());
+            if (correctAnswerIndex === -1) {
+              const ansLower = ans.toLowerCase();
+              if (ansLower === '1' || ansLower === 'a' || ansLower === '১' || ansLower === 'ক') correctAnswerIndex = 0;
+              else if (ansLower === '2' || ansLower === 'b' || ansLower === '২' || ansLower === 'খ') correctAnswerIndex = 1;
+              else if (ansLower === '3' || ansLower === 'c' || ansLower === '৩' || ansLower === 'গ') correctAnswerIndex = 2;
+              else if (ansLower === '4' || ansLower === 'd' || ansLower === '৪' || ansLower === 'ঘ') correctAnswerIndex = 3;
+              else correctAnswerIndex = 0; // fallback if answer doesn't exactly match
+            }
+            
+            return {
+              id: uuidv4(),
+              question,
+              options,
+              correctAnswerIndex
+            };
+          });
         }
       }
 
