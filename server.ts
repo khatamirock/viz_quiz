@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import { GoogleGenAI } from '@google/genai';
 import mongoose from 'mongoose';
+import { kv } from '@vercel/kv';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -72,6 +73,15 @@ const KV_FILE = process.env.VERCEL ? '/tmp/kv_store.json' : 'kv_store.json';
 type KVStore = Record<string, any>;
 
 async function getKV(): Promise<KVStore> {
+  if (process.env.VERCEL && process.env.KV_REST_API_URL) {
+    try {
+      const data = await kv.get<KVStore>('app_kv_store');
+      return data || {};
+    } catch(err) {
+      console.warn("Vercel KV error", err);
+      return {};
+    }
+  }
   try {
     const data = await fs.readFile(KV_FILE, 'utf-8');
     return JSON.parse(data);
@@ -82,6 +92,14 @@ async function getKV(): Promise<KVStore> {
 }
 
 async function setKV(data: KVStore): Promise<void> {
+  if (process.env.VERCEL && process.env.KV_REST_API_URL) {
+    try {
+      await kv.set('app_kv_store', data);
+      return;
+    } catch(err) {
+      console.warn("Vercel KV set error", err);
+    }
+  }
   await fs.writeFile(KV_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
 
