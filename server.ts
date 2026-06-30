@@ -43,8 +43,10 @@ const AttemptSchema = new mongoose.Schema({
 const AttemptModel = mongoose.model('Attempt', AttemptSchema);
 
 let isConnected = false;
+let isConnecting = false;
+
 async function connectDB() {
-  if (isConnected && mongoose.connection.readyState === 1) return true;
+  if (isConnected && (mongoose.connection.readyState as number) === 1) return true;
   
   if (!process.env.MONGODB_URI) {
     if (process.env.VERCEL) {
@@ -54,18 +56,39 @@ async function connectDB() {
     return false; // Fallback to local files for local dev
   }
   
-  if (mongoose.connection.readyState !== 1) {
-    try {
-      await mongoose.connect(process.env.MONGODB_URI, {
-        serverSelectionTimeoutMS: 5000 // Error out quickly in serverless environments
-      });
-      isConnected = true;
-    } catch (error) {
-      console.error("MongoDB connection error:", error);
-      throw new Error(`MongoDB Connection Error: ${(error as Error).message}. If you are using MongoDB Atlas, ensure your Network Access IP Whitelist includes '0.0.0.0/0' to allow Vercel to connect.`);
-    }
+  if ((mongoose.connection.readyState as number) === 1) {
+    isConnected = true;
+    return true;
   }
-  return true;
+  
+  if ((mongoose.connection.readyState as number) === 2 || isConnecting) {
+    // Already connecting, wait a bit
+    let retries = 20;
+    while (retries > 0 && (mongoose.connection.readyState as number) !== 1) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      retries--;
+    }
+    if ((mongoose.connection.readyState as number) === 1) {
+       isConnected = true;
+       return true;
+    }
+    return false;
+  }
+
+  isConnecting = true;
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000 // Error out quickly in serverless environments
+    });
+    isConnected = true;
+    isConnecting = false;
+    return true;
+  } catch (error) {
+    isConnecting = false;
+    console.error("MongoDB connection error:", error);
+    console.warn("Falling back to ephemeral /tmp storage due to MongoDB connection failure.");
+    return false; // Fallback instead of throwing 500
+  }
 }
 
 // --- Local File Fallback (For Development/Preview) ---
@@ -84,10 +107,16 @@ async function getKV(): Promise<KVStore> {
   }
   try {
     const data = await fs.readFile(KV_FILE, 'utf-8');
-    return JSON.parse(data);
+    try {
+      return JSON.parse(data);
+    } catch (parseError) {
+      console.warn("KV JSON Parse Error", parseError);
+      return {};
+    }
   } catch (error: any) {
     if (error.code === 'ENOENT') return {};
-    throw error;
+    console.error("KV Read Error", error);
+    return {}; // fallback safely
   }
 }
 
@@ -100,7 +129,11 @@ async function setKV(data: KVStore): Promise<void> {
       console.warn("Vercel KV set error", err);
     }
   }
-  await fs.writeFile(KV_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  try {
+    await fs.writeFile(KV_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (writeErr) {
+    console.error("Vercel KV Write File Error", writeErr);
+  }
 }
 
 // Helper to decide where to store data based on environment
