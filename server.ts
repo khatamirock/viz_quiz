@@ -47,7 +47,8 @@ async function connectDB() {
   
   if (!process.env.MONGODB_URI) {
     if (process.env.VERCEL) {
-      throw new Error("MONGODB_URI environment variable is not set. Please configure it in your Vercel project settings.");
+      console.warn("MONGODB_URI environment variable is not set. Falling back to ephemeral /tmp storage.");
+      return false;
     }
     return false; // Fallback to local files for local dev
   }

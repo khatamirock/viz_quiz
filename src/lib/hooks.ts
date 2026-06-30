@@ -13,7 +13,13 @@ export function useData<T>(url: string, defaultValue: T): [T, (val: T) => void, 
     return defaultValue;
   });
   
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem(`cache_${url}`);
+      return cached ? false : true;
+    }
+    return true;
+  });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
