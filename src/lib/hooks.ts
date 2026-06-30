@@ -29,8 +29,15 @@ export function useData<T>(url: string, defaultValue: T): [T, (val: T) => void, 
     // But we will still fetch to get the freshest data.
     
     fetch(url)
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch');
+      .then(async res => {
+        if (!res.ok) {
+           let msg = 'Failed to fetch data';
+           try {
+             const errorData = await res.json();
+             if (errorData.error) msg = errorData.error;
+           } catch(e) {}
+           throw new Error(msg);
+        }
         return res.json();
       })
       .then(json => {

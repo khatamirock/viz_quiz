@@ -141,9 +141,13 @@ async function setKV(data: KVStore): Promise<void> {
 async function getData<T>(collection: string): Promise<T[]> {
   const isMongoConnected = await connectDB();
   if (isMongoConnected) {
-    if (collection === 'topics') return (await TopicModel.find({}, '-_id -__v').lean()) as unknown as T[];
-    if (collection === 'quizzes') return (await QuizModel.find({}, '-_id -__v').lean()) as unknown as T[];
-    if (collection === 'attempts') return (await AttemptModel.find({}, '-_id -__v').lean()) as unknown as T[];
+    try {
+      if (collection === 'topics') return (await TopicModel.find({}, '-_id -__v').lean()) as unknown as T[];
+      if (collection === 'quizzes') return (await QuizModel.find({}, '-_id -__v').lean()) as unknown as T[];
+      if (collection === 'attempts') return (await AttemptModel.find({}, '-_id -__v').lean()) as unknown as T[];
+    } catch (dbError) {
+      console.warn(`MongoDB query failed for ${collection}, falling back to KV:`, dbError);
+    }
   }
   
   const store = await getKV();
@@ -153,10 +157,14 @@ async function getData<T>(collection: string): Promise<T[]> {
 async function insertData<T extends {id: string}>(collection: string, doc: T): Promise<void> {
   const isMongoConnected = await connectDB();
   if (isMongoConnected) {
-    if (collection === 'topics') await TopicModel.create(doc);
-    if (collection === 'quizzes') await QuizModel.create(doc);
-    if (collection === 'attempts') await AttemptModel.create(doc);
-    return;
+    try {
+      if (collection === 'topics') await TopicModel.create(doc);
+      if (collection === 'quizzes') await QuizModel.create(doc);
+      if (collection === 'attempts') await AttemptModel.create(doc);
+      return;
+    } catch (dbError) {
+      console.warn(`MongoDB insert failed for ${collection}, falling back to KV:`, dbError);
+    }
   }
 
   const store = await getKV();
@@ -169,10 +177,14 @@ async function insertData<T extends {id: string}>(collection: string, doc: T): P
 async function updateData<T extends {id: string}>(collection: string, id: string, update: Partial<T>): Promise<void> {
   const isMongoConnected = await connectDB();
   if (isMongoConnected) {
-    if (collection === 'topics') await TopicModel.findOneAndUpdate({ id }, update);
-    if (collection === 'quizzes') await QuizModel.findOneAndUpdate({ id }, update);
-    if (collection === 'attempts') await AttemptModel.findOneAndUpdate({ id }, update);
-    return;
+    try {
+      if (collection === 'topics') await TopicModel.findOneAndUpdate({ id }, update);
+      if (collection === 'quizzes') await QuizModel.findOneAndUpdate({ id }, update);
+      if (collection === 'attempts') await AttemptModel.findOneAndUpdate({ id }, update);
+      return;
+    } catch (dbError) {
+      console.warn(`MongoDB update failed for ${collection}, falling back to KV:`, dbError);
+    }
   }
   const store = await getKV();
   const arr = (store[collection] as T[]) || [];
@@ -187,10 +199,14 @@ async function updateData<T extends {id: string}>(collection: string, id: string
 async function deleteData(collection: string, id: string): Promise<void> {
   const isMongoConnected = await connectDB();
   if (isMongoConnected) {
-    if (collection === 'topics') await TopicModel.findOneAndDelete({ id });
-    if (collection === 'quizzes') await QuizModel.findOneAndDelete({ id });
-    if (collection === 'attempts') await AttemptModel.findOneAndDelete({ id });
-    return;
+    try {
+      if (collection === 'topics') await TopicModel.findOneAndDelete({ id });
+      if (collection === 'quizzes') await QuizModel.findOneAndDelete({ id });
+      if (collection === 'attempts') await AttemptModel.findOneAndDelete({ id });
+      return;
+    } catch (dbError) {
+      console.warn(`MongoDB delete failed for ${collection}, falling back to KV:`, dbError);
+    }
   }
   const store = await getKV();
   const arr = (store[collection] as {id: string}[]) || [];
@@ -248,7 +264,8 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       const topics = await getData<Topic>('topics');
       res.json(topics);
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      console.error("GET /api/topics error:", e);
+      res.status(500).json({ error: e.message, stack: e.stack });
     }
   });
 
@@ -281,11 +298,19 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
   app.delete('/api/topics/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const isMongoConnected = await connectDB();
+      let isMongoConnected = await connectDB();
       
       let topics: Topic[] = [];
       if (isMongoConnected) {
-        topics = (await TopicModel.find({}, '-_id -__v').lean()) as unknown as Topic[];
+        try {
+          topics = (await TopicModel.find({}, '-_id -__v').lean()) as unknown as Topic[];
+        } catch (e) {
+          console.warn("Mongo find failed during delete, falling back to KV", e);
+          const store = await getKV();
+          topics = (store['topics'] as Topic[]) || [];
+          // we should act as if mongo is not connected for the rest of this op
+          isMongoConnected = false; 
+        }
       } else {
         const store = await getKV();
         topics = (store['topics'] as Topic[]) || [];
@@ -305,7 +330,14 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       
       let quizzes: Quiz[] = [];
       if (isMongoConnected) {
-        quizzes = (await QuizModel.find({}, '-_id -__v').lean()) as unknown as Quiz[];
+        try {
+          quizzes = (await QuizModel.find({}, '-_id -__v').lean()) as unknown as Quiz[];
+        } catch (e) {
+          console.warn("Mongo find quizzes failed during delete, falling back to KV", e);
+          const store = await getKV();
+          quizzes = (store['quizzes'] as Quiz[]) || [];
+          isMongoConnected = false; 
+        }
       } else {
         const store = await getKV();
         quizzes = (store['quizzes'] as Quiz[]) || [];
@@ -313,13 +345,20 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       
       const quizIdsToDelete = quizzes.filter(q => topicIdsArray.includes(q.topicId)).map(q => q.id);
 
+      let usedMongo = false;
       if (isMongoConnected) {
-        await TopicModel.deleteMany({ id: { $in: topicIdsArray } });
-        if (quizIdsToDelete.length > 0) {
-          await QuizModel.deleteMany({ id: { $in: quizIdsToDelete } });
-          await AttemptModel.deleteMany({ quizId: { $in: quizIdsToDelete } });
+        try {
+          await TopicModel.deleteMany({ id: { $in: topicIdsArray } });
+          if (quizIdsToDelete.length > 0) {
+            await QuizModel.deleteMany({ id: { $in: quizIdsToDelete } });
+            await AttemptModel.deleteMany({ quizId: { $in: quizIdsToDelete } });
+          }
+          usedMongo = true;
+        } catch(err) {
+          console.warn("Mongo delete failed, falling back to KV", err);
         }
-      } else {
+      }
+      if (!usedMongo) {
         const store = await getKV();
         store['topics'] = (store['topics'] as Topic[] || []).filter(t => !topicIdsArray.includes(t.id));
         if (quizIdsToDelete.length > 0) {
@@ -341,7 +380,8 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       const quizzes = await getData<Quiz>('quizzes');
       res.json(quizzes);
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      console.error("GET /api/quizzes error:", e);
+      res.status(500).json({ error: e.message, stack: e.stack });
     }
   });
 
@@ -360,10 +400,17 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
     try {
       const { id } = req.params;
       const isMongoConnected = await connectDB();
+      let usedMongo = false;
       if (isMongoConnected) {
-        await QuizModel.findOneAndDelete({ id });
-        await AttemptModel.deleteMany({ quizId: id });
-      } else {
+        try {
+          await QuizModel.findOneAndDelete({ id });
+          await AttemptModel.deleteMany({ quizId: id });
+          usedMongo = true;
+        } catch(err) {
+          console.warn("MongoDB delete quiz failed, falling back to KV", err);
+        }
+      }
+      if (!usedMongo) {
         const store = await getKV();
         store['quizzes'] = ((store['quizzes'] as Quiz[]) || []).filter(q => q.id !== id);
         store['attempts'] = ((store['attempts'] as QuizAttempt[]) || []).filter(a => a.quizId !== id);
@@ -371,6 +418,7 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       }
       res.json({ success: true });
     } catch (e: any) {
+      console.error("DELETE /api/quizzes/:id error:", e);
       res.status(500).json({ error: e.message });
     }
   });
@@ -380,9 +428,16 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       const { id } = req.params;
       const updatedQuiz = req.body;
       const isMongoConnected = await connectDB();
+      let usedMongo = false;
       if (isMongoConnected) {
-        await QuizModel.findOneAndUpdate({ id }, updatedQuiz);
-      } else {
+        try {
+          await QuizModel.findOneAndUpdate({ id }, updatedQuiz);
+          usedMongo = true;
+        } catch(err) {
+          console.warn("MongoDB update quiz failed, falling back to KV", err);
+        }
+      } 
+      if (!usedMongo) {
         const store = await getKV();
         const quizzes = (store['quizzes'] as Quiz[]) || [];
         const index = quizzes.findIndex((q: Quiz) => q.id === id);
@@ -396,6 +451,7 @@ function getGeminiClient(customApiKey?: string): GoogleGenAI {
       }
       res.json(updatedQuiz);
     } catch (e: any) {
+      console.error("PUT /api/quizzes/:id error:", e);
       res.status(500).json({ error: e.message });
     }
   });
@@ -603,7 +659,8 @@ No other text, markdown, or explanations outside the JSON array.`;
       const attempts = await getData<QuizAttempt>('attempts');
       res.json(attempts);
     } catch (e: any) {
-      res.status(500).json({ error: e.message });
+      console.error("GET /api/progress error:", e);
+      res.status(500).json({ error: e.message, stack: e.stack });
     }
   });
 
