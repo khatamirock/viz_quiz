@@ -2,30 +2,15 @@ import React, { useState } from 'react';
 import { useData } from '../lib/hooks';
 import { Topic, Quiz, QuizAttempt } from '../types';
 import { Link } from 'react-router-dom';
-import { Folder, Play, CheckCircle, BarChart2, Trash2, Edit2, Loader2 } from 'lucide-react';
+import { Folder, Play, CheckCircle, BarChart2, Trash2, Edit2 } from 'lucide-react';
 import PasskeyModal from '../components/PasskeyModal';
 
 export default function Dashboard() {
-  const [quizzes, setQuizzes, loadingQuizzes, errorQuizzes] = useData<Quiz[]>('/api/quizzes', []);
-  const [attempts, setAttempts, loadingAttempts, errorAttempts] = useData<QuizAttempt[]>('/api/progress', []);
-  const [topics, setTopics, loadingTopics, errorTopics] = useData<Topic[]>('/api/topics', []);
+  const [quizzes, setQuizzes] = useData<Quiz[]>('/api/quizzes', []);
+  const [attempts] = useData<QuizAttempt[]>('/api/progress', []);
+  const [topics] = useData<Topic[]>('/api/topics', []);
   
   const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
-
-  if (loadingQuizzes || loadingAttempts || loadingTopics) {
-    return <div className="flex h-[60vh] justify-center items-center"><Loader2 className="animate-spin text-neutral-400" size={32} /></div>;
-  }
-
-  if (errorQuizzes || errorAttempts || errorTopics) {
-    return (
-      <div className="flex flex-col h-[60vh] justify-center items-center text-center space-y-4">
-         <div className="bg-red-50 text-red-600 p-4 rounded-xl max-w-md">
-            <h3 className="font-semibold mb-1">ডেটা লোড করতে সমস্যা হয়েছে</h3>
-            <p className="text-sm opacity-90">হয়ত আপনি অফলাইনে আছেন এবং কোনো অফলাইন ডেটা সেভ করা নেই। অনুগ্রহ করে ইন্টারনেট সংযোগ চেক করুন।</p>
-         </div>
-      </div>
-    );
-  }
 
   const totalTaken = attempts.length;
 

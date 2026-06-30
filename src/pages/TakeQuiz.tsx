@@ -11,39 +11,12 @@ export default function TakeQuiz() {
   
   const [isStarted, setIsStarted] = useState(false);
   const [questionLimit, setQuestionLimit] = useState<number | 'all'>('all');
-  const [timeLimit, setTimeLimit] = useState<number | 'none'>('none');
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [showResults, setShowResults] = useState(false);
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    let timer: any;
-    if (isStarted && !showResults && timeLeft !== null && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev === null) return null;
-          if (prev <= 1) {
-            clearInterval(timer);
-            // Auto-submit
-            setShowResults(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [isStarted, showResults, timeLeft]);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
 
   const quiz = quizzes.find(q => q.id === quizId);
 
@@ -143,23 +116,6 @@ export default function TakeQuiz() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">সময় নির্বাচন করুন (ঐচ্ছিক)</label>
-                  <select 
-                    value={timeLimit}
-                    onChange={(e) => setTimeLimit(e.target.value === 'none' ? 'none' : Number(e.target.value))}
-                    className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
-                  >
-                    <option value="none">কোনো সময়সীমা নেই</option>
-                    <option value="5">৫ মিনিট</option>
-                    <option value="10">১০ মিনিট</option>
-                    <option value="15">১৫ মিনিট</option>
-                    <option value="20">২০ মিনিট</option>
-                    <option value="30">৩০ মিনিট</option>
-                    <option value="60">৬০ মিনিট</option>
-                  </select>
-                </div>
-
                 <button 
                   onClick={() => {
                      let q = [...quiz.questions];
@@ -167,11 +123,6 @@ export default function TakeQuiz() {
                         q = q.sort(() => 0.5 - Math.random()).slice(0, questionLimit);
                      }
                      setQuizQuestions(q);
-                     if (timeLimit !== 'none') {
-                        setTimeLeft(timeLimit * 60);
-                     } else {
-                        setTimeLeft(null);
-                     }
                      setIsStarted(true);
                   }}
                   className="w-full py-3 bg-black dark:bg-white text-white dark:text-black rounded-xl font-medium flex justify-center items-center space-x-2 hover:bg-neutral-800 dark:hover:bg-neutral-200 transition"
@@ -263,14 +214,7 @@ export default function TakeQuiz() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div>
-         <div className="flex justify-between items-center mb-4">
-           <button onClick={() => navigate('/')} className="text-sm text-neutral-500 hover:text-black">← ড্যাশবোর্ড</button>
-           {timeLeft !== null && (
-              <div className={`font-mono font-medium px-3 py-1 rounded-lg ${timeLeft < 60 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'}`}>
-                {formatTime(timeLeft)}
-              </div>
-           )}
-         </div>
+         <button onClick={() => navigate('/')} className="text-sm text-neutral-500 hover:text-black mb-4">← ড্যাশবোর্ড</button>
          <h1 className="text-2xl font-semibold tracking-tight">{quiz.title}</h1>
          <p className="text-sm text-neutral-500 mt-1">প্রশ্ন {currentIndex + 1} / {quizQuestions.length}</p>
          

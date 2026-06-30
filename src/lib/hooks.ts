@@ -13,13 +13,7 @@ export function useData<T>(url: string, defaultValue: T): [T, (val: T) => void, 
     return defaultValue;
   });
   
-  const [loading, setLoading] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const cached = localStorage.getItem(`cache_${url}`);
-      return cached ? false : true;
-    }
-    return true;
-  });
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -29,15 +23,8 @@ export function useData<T>(url: string, defaultValue: T): [T, (val: T) => void, 
     // But we will still fetch to get the freshest data.
     
     fetch(url)
-      .then(async res => {
-        if (!res.ok) {
-           let msg = 'Failed to fetch data';
-           try {
-             const errorData = await res.json();
-             if (errorData.error) msg = errorData.error;
-           } catch(e) {}
-           throw new Error(msg);
-        }
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch');
         return res.json();
       })
       .then(json => {
