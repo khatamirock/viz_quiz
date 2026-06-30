@@ -1,19 +1,34 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../lib/hooks';
 import { Topic, Quiz } from '../types';
-import { Folder, Plus, Trash2, Edit2, Check, X, Play, ChevronDown, ChevronRight, FileText, MoreHorizontal } from 'lucide-react';
+import { Folder, Plus, Trash2, Edit2, Check, X, Play, ChevronDown, ChevronRight, FileText, MoreHorizontal, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import PasskeyModal from '../components/PasskeyModal';
 
 export default function Topics() {
-  const [topics, setTopics] = useData<Topic[]>('/api/topics', []);
-  const [quizzes, setQuizzes] = useData<Quiz[]>('/api/quizzes', []); // To check if topic has quizzes
+  const [topics, setTopics, loadingTopics, errorTopics] = useData<Topic[]>('/api/topics', []);
+  const [quizzes, setQuizzes, loadingQuizzes, errorQuizzes] = useData<Quiz[]>('/api/quizzes', []); // To check if topic has quizzes
   const [newTopicName, setNewTopicName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const [topicToDelete, setTopicToDelete] = useState<string | null>(null);
   const [topicToUpdate, setTopicToUpdate] = useState<{id: string, name: string} | null>(null);
   const [quizToDelete, setQuizToDelete] = useState<string | null>(null);
+
+  if (loadingTopics || loadingQuizzes) {
+    return <div className="flex h-[60vh] justify-center items-center"><Loader2 className="animate-spin text-neutral-400" size={32} /></div>;
+  }
+
+  if (errorTopics || errorQuizzes) {
+    return (
+      <div className="flex flex-col h-[60vh] justify-center items-center text-center space-y-4">
+         <div className="bg-red-50 text-red-600 p-4 rounded-xl max-w-md">
+            <h3 className="font-semibold mb-1">ডেটা লোড করতে সমস্যা হয়েছে</h3>
+            <p className="text-sm opacity-90">হয়ত আপনি অফলাইনে আছেন এবং কোনো অফলাইন ডেটা সেভ করা নেই।</p>
+         </div>
+      </div>
+    );
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

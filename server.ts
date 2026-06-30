@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs/promises';
 import { GoogleGenAI } from '@google/genai';
 import mongoose from 'mongoose';
-import { kv } from '@vercel/kv';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -98,6 +97,7 @@ type KVStore = Record<string, any>;
 async function getKV(): Promise<KVStore> {
   if (process.env.VERCEL && process.env.KV_REST_API_URL) {
     try {
+      const { kv } = await import('@vercel/kv');
       const data = await kv.get<KVStore>('app_kv_store');
       return data || {};
     } catch(err) {
@@ -123,6 +123,7 @@ async function getKV(): Promise<KVStore> {
 async function setKV(data: KVStore): Promise<void> {
   if (process.env.VERCEL && process.env.KV_REST_API_URL) {
     try {
+      const { kv } = await import('@vercel/kv');
       await kv.set('app_kv_store', data);
       return;
     } catch(err) {
